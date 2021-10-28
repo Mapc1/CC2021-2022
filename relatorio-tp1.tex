@@ -65,7 +65,8 @@
 
                     Após o uso dos quatro programas podemos concluir que o mais seguro é o sftp pelo seu uso do protocolo ssh que encripta toda a comunicação entre despositivos. Enquanto que FTP e TFTP não fazem encriptação nenhuma dos dados.
 
-                    Em termos de simplicidade http é o melhor devido ao facto de que só é necessário enviar um pacote \textit{GET} e o servidor retorna o ficheiro.
+                    De todos os programas utilizados o sftp é o mais complexo devido à encryptação dos dados que em conjunto com o uso de \textit{TCP} criam um \textit{overhead} forte. Por outro lado o \textit{TFTP} mostra-se o mais simples 
+                pelo seu uso do protocolo UDP. Assim todo o processo de deteção de erros passa para a camada da aplicação o que permite remover toda a complexidade que o \textit{TCP} trás consigo que o \textit{TFTP} não precisa.
         \subsection*{Parte II}
             \begin{center}
                 \scalebox{0.6}{
