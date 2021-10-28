@@ -73,21 +73,21 @@
                         \hline
                         \textbf{Comando usado (aplicação)} & \textbf{Protocolo de Aplicação (se aplicável)} & \textbf{Protocolo de Transporte (se aplicável)} & \textbf{Porta de atendimento (se aplicável)} & \textbf{\textit{Overhead} de transporte em bytes (se aplicável)} \\
                         \hline
-                        ping          & icmp   & Não tem & Não tem &  0 \\
+                        ping          & icmp   & Não tem & Não tem          &  0 \\
                         \hline
-                        traceroute    & icmp   & Não tem & Não tem &  0 \\
+                        traceroute    & icmp   & Não tem & Não tem          &  0 \\
                         \hline 
-                        telnet        & telnet & tcp     & 23      & 20 \\
+                        telnet        & telnet & tcp     & 23               & 20*nºseg + 74*nº[SYN,ACK] + 66*nº[FIN,ACK] \\
                         \hline
-                        ftp           & ftp    & tcp     & 20,21   & 20 \\
+                        ftp           & ftp    & tcp     & 20,21            & 20*nºseg + 74*nº[SYN,ACK] + 66*nº[FIN,ACK] \\
                         \hline
-                        tftp          & tftp   & udp     & 69,?    &  8 \\
+                        tftp          & tftp   & udp     & 69, Aleatório    &  8*nºseg \\
                         \hline
-                        http(browser) & http   & tcp     & 80      & 20 \\
+                        http(browser) & http   & tcp     & 80               & 20*nºseg + 74*nº[SYN,ACK] + 66*nº[FIN,ACK] \\
                         \hline
-                        nslookup      & dns    & udp     & 53      &  8 \\
+                        nslookup      & dns    & udp     & 53               &  8*nºseg \\
                         \hline
-                        ssh           & ssh    & tcp     & 22      & 20 \\
+                        ssh           & ssh    & tcp     & 22               & 20*nºseg + 74*nº[SYN,ACK] + 66*nº[FIN,ACK] \\
                         \hline
                     \end{tabular}
                 }
