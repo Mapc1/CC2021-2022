@@ -35,15 +35,19 @@
                     Mais interessante é o resultado destes problemas de conexão no \textit{rtt(round-trip time)} em que se pode verificar
                 que o \textit{Grilo} teve valores significativamente mais elevados que a sua contraparte. Apesar disto o \textit{Grilo} demorou
                 menos 2101ms a executar.
+
+		Nas aplicações que utillizam TCP na camada de transporte, é a camada de transporte que lida com as perdas e duplicações. No entanto, no caso em que a aplicação utiliza UDP, terá de ser a aplicação a ter este controlo, pois o UDP apenas envia os dados e não verifica se foi entregue.
             \subsubsection*{2}
                 {
                     \centering
                     \includegraphics[width=12cm]{images/ftp-flow-graph.png}
                     \par
                 }
-                    Através do diagrama produzido, pelo wireshark, podemos ver toda a comunicação FTP feita entre o \textit{Portatil1} (10.1.1.1) e o \textit{Servidor1} (10.2.2.1).
+                    Através do diagrama produzido, pelo Wireshark, podemos ver toda a comunicação FTP feita entre o \textit{Portatil1} (10.1.1.1) e o \textit{Servidor1} (10.2.2.1).
 
-		            O início da conexão começa com o envio do tipo de segmento SYN
+		            O envio do ficheiro entre o servidor e o portátil ocorrem entre as portas 20 e 34987, respetivamente. Os três primeiros segmentos enviados entre estas duas portas correspondem ao inicio da conexão (3-way handshake), o segmento seguinte corresponde à transferência do ficheiro entre as portas, os quatro segmentos finais correspondem à terminação da conexão.
+
+	São utilizados três tipos de segmentos, ACK, FIN e SYN. Os números de sequência utilizados foram 0, 1 e 225 e 226 e os números de ACK 1, 225 e 226.
 
                     Para além disso, o diagrama mostra que a conexão do lado do servidor está a ser feita na porta 20 que é reservada para o protocolo FTP.
             \subsubsection*{3}
@@ -52,11 +56,11 @@
                     \includegraphics[width=12cm]{images/tftp-wireshark-flow-graph.png}
                     \par
                 }
-		            Através do diagrama produzido, pelo wireshark, podemos ver toda a comunicação TFTP feita entre o \textit{Portatil1} (10.1.1.1) e o \textit{Servidor1} (10.2.2.1).
+		            Através do diagrama produzido, pelo Wireshark, podemos ver toda a comunicação TFTP feita entre o \textit{Portatil1} (10.1.1.1) e o \textit{Servidor1} (10.2.2.1).
 
-                    O protocolo TFTP mostra-se bem mais simples que o FTP tendo sido apenas trocados 3 pacotes, pois utiliza UDP na camada de transporte o que significa que não tem as fases de início e fim de conexão.
+                    O protocolo TFTP mostra-se bem mais simples que o FTP, tendo sido apenas trocados 3 segmentos, pois utiliza UDP na camada de transporte o que significa que não tem as fases de início e fim de conexão.
 
-                    É feito um \textit{Read Request}, o servidor envia o ficheiro e, por fim, o portátil responde com um \textit{Acknoulegment}.
+                    É feito um \textit{Read Request}, o servidor envia o ficheiro e, por fim, o portátil responde com um \textit{Acknowledgement}.
 
                     Tal como no exercício anterior podemos conferir no diagrama que o servidor inicia a conexão na porta 69 que corresponde a porta reservada para o TFTP. No entanto, a conexão muda para a porta 44209 para ocorrer a transferência do ficheiro.
             \clearpage
