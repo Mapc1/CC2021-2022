@@ -1,4 +1,4 @@
-\documentclass[size=11pt]{report}
+\documentclass{report}
 
 \usepackage{authblk}
 \usepackage{fancyhdr}
@@ -90,8 +90,19 @@
             
             O servidor dns principal pode ser encontrado através de uma query \textbf{SOA}.
             Assim podemos ver, entre outra informação, que o nome deste é \textbf{dnssec.gov.pt.}. Podemos também ver através das flags \textit{rd ra(recursion desired/recursion available)} que existe de facto recursividade disponível.
-        \subsection*{F}
         \pagebreak
+        \subsection*{F}
+            A partir da query que foi feita na questão anterior podemos concluir que o servidor dns principal tem o nome \textbf{dnssec.gov.pt.}\par
+            Com isto podemos procurar pelo seu endereço IPv4/IPv6:
+            \par 
+            \noindent
+            \includegraphics[width=\textwidth]{images/dig_dnssec_a.png}
+            \par 
+            \noindent
+            \includegraphics[width=\textwidth]{images/dig_dnssec_aaaa.png}
+            \par
+            Bem... Através destas queries descobrimos que este servidor não tem endereço IPv4 nem IPv6.
+            Assim não conseguimos obter uma resposta autoritativa.
         \subsection*{G}
             \noindent
             \includegraphics[width=\textwidth]{images/dig_presidencia.png}
