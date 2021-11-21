@@ -142,12 +142,12 @@
             \vspace{0.45em}
             De toda a informação apresentada os servidores utilizam as cinco últimas colunas para se atualizarem:
             \begin{description}
-                \item[2021111501] Este é o número de serial que indica a versão da base de dados e que é alterado cada vez que a base de dados é alterada. 
+                \item[2021111501:] Este é o número de serial que indica a versão da base de dados e que é alterado cada vez que a base de dados é alterada. 
                 \par Os servidores secundários verificam este valor para saberem se se devem atualizar.
-                \item[14400] Este valor indica o intervalo em que os servidores secundários devem fazer um novo pedido SOA.
-                \item[7200] Caso o pedido SOA falhe este campo indica o tempo que o servidor deve esperar até enviar um novo pedido.
-                \item[1209600] Se um servidor secundário não receber uma resposta do servidor primário durante este período de tempo este deve deixar de responder a queries para a zona
-                \item[300] Este valor especifica o tempo que um cliente guarde os registos deste servidor na cache. 
+                \item[14400:] Este valor indica o intervalo em que os servidores secundários devem fazer um novo pedido SOA.
+                \item[7200:] Caso o pedido SOA falhe este campo indica o tempo que o servidor deve esperar até enviar um novo pedido.
+                \item[1209600:] Se um servidor secundário não receber uma resposta do servidor primário durante este período de tempo este deve deixar de responder a queries para a zona
+                \item[300:] Este valor especifica o tempo que um cliente guarde os registos deste servidor na cache. 
             \end{description}
 
 
