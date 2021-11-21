@@ -29,7 +29,7 @@
     \newpage
 
     \section*{Parte I}
-        \subsection*{C}
+        \subsection*{A}
             \noindent
             \includegraphics[width=\textwidth]{images/resolv.conf.png}
             \par
@@ -149,6 +149,46 @@
                 \item[1209600:] Se um servidor secundário não receber uma resposta do servidor primário durante este período de tempo este deve deixar de responder a queries para a zona
                 \item[300:] Este valor especifica o tempo que um cliente guarde os registos deste servidor na cache. 
             \end{description}
+    \section*{Parte II}
+	Nesta seccão corremos o nosso próprio DNS, de modo a facilitar a leitura das imagens, os dois terminais em cima nos prints serão, no lado esquerdo, o servidor 1 e, no lado direito, o servidor Golfinho, em baixo será o portátil 2.
 
+	Nas seguintes figuras temos os dois servidores a correr.
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/digambos.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/pingambos.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/reversoambos.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	Podemos observar nas últimas figuras que o name server que está a responder às queries tem o IP \textbf{10.2.2.1} que corresponde ao servidor primário.
+	Nas seguintes figuras apenas o servidor secundário a correr.
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/digum.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/pingum.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	\noindent
+        \includegraphics[width=\textwidth]{images/reversoum.png}
+        \par
+	\vspace{0.45em}
+ 	\par
+	Nestas figuras podemos observar que devido ao servidor primário estar desligado, as querias foram respondidas com sucesso pelo servidor secundário com o IP  \textbf{10.3.3.2}. Podemos também observar que o ping para ambas as situações foi igual pois o servidor secundário assegurou uma resposta correta ao ping do site www.cc.pt .
 
 \end{document}
