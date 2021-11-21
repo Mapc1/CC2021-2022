@@ -41,7 +41,8 @@
                 \item[nameserver 127.0.0.53] Diz ao \textit{resolver} a que servidor DNS se deve conectar. Neste caso aponta para o endereço 127.0.0.53 no
                 \textit{localhost} onde opera o processo \textit{systemd-resolved} que toma conta do processo de encaminhamento dos pedidos.
                 \item[options edns0 trust-ad] Permite mudar as variáveis internas do \textit{resolver}.
-                \item[search home]   
+                \item[search home] Caso o utilizador introduza uma pesquisa com menos do que um certo número do pontos (por omissão é 1) o resolver concatena, neste caso ".home", a essa pesquisa.
+                Por exemplo: \textbf{"http://exemplo/ficheiro.html"} é convertido em \textbf{"http://exemplo.home/ficheiro.html"}
             \end{description}
         \pagebreak
         \subsection*{B}
@@ -70,7 +71,7 @@
             \noindent
             \includegraphics[width=\textwidth]{images/dig_root.png}
             \par
-                Ao fazermos a mesma query relativamente ao servidor "." obtivemos o nome de todos os servidores \textbf{root} que como se pode ver na resposta foi-lhes atribuida uma letra a cada um.
+                Ao fazermos a mesma query relativamente ao servidor "." obtivemos o nome de todos os servidores \textbf{root} que, como se pode ver na resposta foi-lhes atribuida uma letra a cada um.
         \pagebreak
         \subsection*{D}
                 Para respondermos a esta questão usamos a flag \textbf{ANY} para procurar por todos os registos relativos a \textbf{efiko.academy.} e obtivemos a seguinte resposta:
@@ -146,7 +147,7 @@
                 \par Os servidores secundários verificam este valor para saberem se se devem atualizar.
                 \item[14400:] Este valor indica o intervalo em que os servidores secundários devem fazer um novo pedido SOA.
                 \item[7200:] Caso o pedido SOA falhe este campo indica o tempo que o servidor deve esperar até enviar um novo pedido.
-                \item[1209600:] Se um servidor secundário não receber uma resposta do servidor primário durante este período de tempo este deve deixar de responder a queries para a zona
+                \item[1209600:] Se um servidor secundário não receber uma resposta do servidor primário durante este período de tempo este deve deixar de responder a queries para a zona.
                 \item[300:] Este valor especifica o tempo que um cliente guarde os registos deste servidor na cache. 
             \end{description}
     \section*{Parte II}
