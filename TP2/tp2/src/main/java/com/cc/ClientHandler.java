@@ -1,6 +1,7 @@
 package com.cc;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -18,6 +19,7 @@ public class ClientHandler implements Runnable {
         ip = InetAddress.getByName(addr);
         socket = new DatagramSocket();
         this.serverPort = serverPort;
+        System.out.println("Connection open in: " + serverPort + "ip: " + addr);
     }
 
     public void run() {
@@ -25,14 +27,17 @@ public class ClientHandler implements Runnable {
         while(msg != "OFF") {
             byte[] buffer = new byte[512];
 
-            buffer = msg.getBytes();
+            try {
+                buffer = msg.getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e1) {
+                e1.printStackTrace();
+            }
 
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, ip, serverPort);
 
             try {
                 socket.send(packet);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             msg = sc.nextLine();

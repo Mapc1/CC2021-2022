@@ -12,13 +12,14 @@ public class ServerHandler implements Runnable {
 
     public ServerHandler(int port) throws SocketException {
         this.socket = new DatagramSocket(port);
+        System.out.println("Connection open in: " + port);
     }
 
     public void run() {
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
         String msg = "AYAYA";
 
         while(msg != "OFF") {
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
                 socket.receive(packet);
             } catch (IOException e) {

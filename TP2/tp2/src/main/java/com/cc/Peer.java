@@ -3,10 +3,6 @@ package com.cc;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
-/**
- * Hello world!
- *
- */
 public class Peer 
 {
     public static void main( String[] args ) {
@@ -15,8 +11,8 @@ public class Peer
         try {
             server = new Thread(new ServerHandler(Integer.parseInt(args[0])));
             client = new Thread(new ClientHandler(Integer.parseInt(args[1]), args[2]));
-            client.run();
-            server.run();
+            client.start();
+            server.start();
 
             server.join();
             client.join();
