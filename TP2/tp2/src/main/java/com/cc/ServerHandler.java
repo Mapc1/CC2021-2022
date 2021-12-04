@@ -5,20 +5,25 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class ServerHandler implements Runnable { 
     DatagramSocket socket;
-    byte[] buffer = new byte[512];
+    Encryption e;
 
-    public ServerHandler(int port) throws SocketException {
-        this.socket = new DatagramSocket(port);
-        System.out.println("Connection open in: " + port);
+    public ServerHandler(DatagramSocket listenSocket, Encryption e) throws SocketException {
+        this.e = e;
+        this.socket = listenSocket;
+        System.out.println("Connection open in: " + socket.getLocalPort());
     }
 
     public void run() {
         String msg = "AYAYA";
+        byte[] buffer = new byte[512];
 
         while(msg != "OFF") {
+            Arrays.fill(buffer, (byte) 0);
+            
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             try {
                 socket.receive(packet);
@@ -28,9 +33,11 @@ public class ServerHandler implements Runnable {
 
             byte[] dataBuffer = packet.getData(); 
 
-            msg = new String(dataBuffer, StandardCharsets.UTF_8);
+            String newMsg = new String(e.decrypt(packet.getData(),packet.getLength()),0,packet.getLength(),StandardCharsets.UTF_8);
 
-            System.out.println(msg);
+            Arrays.fill(dataBuffer, (byte) 0);
+
+            System.out.println(newMsg);
         }
     }
 }

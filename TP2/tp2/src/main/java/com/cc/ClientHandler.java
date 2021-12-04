@@ -1,12 +1,12 @@
 package com.cc;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class ClientHandler implements Runnable {
@@ -14,8 +14,10 @@ public class ClientHandler implements Runnable {
     DatagramSocket socket;
     Scanner sc = new Scanner(System.in);
     int serverPort;
+    Encryption e;
 
-    public ClientHandler(int serverPort, String addr) throws UnknownHostException, SocketException {
+    public ClientHandler(int serverPort, String addr, Encryption e) throws UnknownHostException, SocketException {
+        this.e = e;
         ip = InetAddress.getByName(addr);
         socket = new DatagramSocket();
         this.serverPort = serverPort;
@@ -24,15 +26,12 @@ public class ClientHandler implements Runnable {
 
     public void run() {
         String msg = sc.nextLine();
+        byte[] buffer = new byte[512];
         while(msg != "OFF") {
-            byte[] buffer = new byte[512];
+            Arrays.fill(buffer, (byte) 0);
 
-            try {
-                buffer = msg.getBytes("UTF-8");
-            } catch (UnsupportedEncodingException e1) {
-                e1.printStackTrace();
-            }
-
+            byte[] binary = msg.getBytes();
+            buffer = e.encrypt(binary,binary.length);
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, ip, serverPort);
 
             try {
