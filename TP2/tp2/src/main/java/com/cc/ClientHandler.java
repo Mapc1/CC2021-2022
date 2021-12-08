@@ -1,45 +1,36 @@
 package com.cc;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
 
 public class ClientHandler implements Runnable {
-    InetAddress ip;
-    DatagramSocket socket;
-    Scanner sc = new Scanner(System.in);
-    int serverPort;
-    Encryption e;
+    private Protocolo p;
 
-    public ClientHandler(int serverPort, String addr, Encryption e) throws UnknownHostException, SocketException {
-        this.e = e;
-        ip = InetAddress.getByName(addr);
-        socket = new DatagramSocket();
-        this.serverPort = serverPort;
-        System.out.println("Connection open in: " + serverPort + "ip: " + addr);
+    public ClientHandler(Protocolo p) throws UnknownHostException, SocketException {
+        this.p = p;
+        System.out.println("Connection open in: " + p.getPort() + " ip: " + p.getAddress().toString());
     }
 
     public void run() {
-        String msg = sc.nextLine();
-        byte[] buffer = new byte[512];
-        while(msg != "OFF") {
-            Arrays.fill(buffer, (byte) 0);
+        try {
+            p.connect();
 
-            byte[] binary = msg.getBytes();
-            buffer = e.encrypt(binary,binary.length);
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, ip, serverPort);
+            String msg = new String();
+            while(!msg.equals("FYN")) {
+                byte[] data = p.receiveData();
 
-            try {
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
+                msg = new String(data,0, data.length, StandardCharsets.UTF_8);
+                if(!msg.equals("FYN"))
+                        System.out.print(msg);
+
+                byte[] buffer2 ="ACK".getBytes();
+                p.sendData(buffer2);
             }
-            msg = sc.nextLine();
+            System.out.println();
+        } catch (IOException | ConnectionFailureException e) {
+            e.printStackTrace();
         }
     }
 }
