@@ -1,0 +1,39 @@
+Tipos de mensagem
+1 - Pedir informação ficheiros existentes
+2 - Pedir transferencia de um ficheiro
+3 - Info do ficheiro que irá enviar
+4 - Transferir ficheiro
+20 - ack
+44 - erros
+
+Tipo 1
+-----------------------------------
+| Tipo | Nº Seq | Size | Metadados|
+-----------------------------------
+1B         2B     2B
+
+Tipo 2
+-----------------------------
+| Tipo | Size | Metadadados |   
+-----------------------------
+   1B     2B
+Será que pode chegar a precisar de enviar outro pacote?
+
+Tipo 3
+------------------------------------------
+| Tipo | Nº Sequências | Size | Metadata |
+------------------------------------------
+   1B          5B          2B    
+
+Tipo 4
+-------------------------
+| Tipo | Nº Seq | Dados |
+-------------------------
+   1B       5B
+
+
+Tipo 20
+-----------------
+| Tipo | Nº Seq | 
+-----------------
+
