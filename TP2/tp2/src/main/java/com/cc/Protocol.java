@@ -192,9 +192,7 @@ public class Protocol {
         return bb.array();
     }
 
-
-
-    //Verificar se está correto
+    // Verificar se está correto
 
     // Tipo 4
     // -------------------------
@@ -223,7 +221,7 @@ public class Protocol {
                 // primeiro byte que define o tipo
                 bb.put(0, (byte) 4);
 
-                // bytes com o nº de sequências que esta transferência terá
+                // bytes com o nº de sequência da mensagem
                 byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
                 bb.put(1, numSequences, 3, numSequencesBytes);
 
@@ -238,7 +236,7 @@ public class Protocol {
             // primeiro byte que define o tipo
             bb.put(0, (byte) 4);
 
-            // bytes com o nº de sequências que esta transferência terá
+            // bytes com o nº de sequência da mensagem
             byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
             bb.put(1, numSequences, 3, numSequencesBytes);
 
@@ -251,16 +249,22 @@ public class Protocol {
             e.printStackTrace();
         }
 
-
         return res;
     }
 
     // Tipo 20
     // -----------------
-    // | Tipo | Nº Seq | 
+    // | Tipo | Nº Seq |
     // -----------------
-    public static byte[] createAckMessage(Integer seqNumbeInteger) {
+    public static byte[] createAckMessage(Integer seqNumber) {
+        Integer numSequencesBytes = 5;
         ByteBuffer bb = ByteBuffer.allocate(messageSize);
+        // primeiro byte que define o tipo
+        bb.put(0, (byte) 20);
+
+        // bytes com o nº de sequências que esta transferência terá
+        byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
+        bb.put(1, numSequences, 3, numSequencesBytes);
 
         return bb.array();
     }
