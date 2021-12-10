@@ -48,14 +48,21 @@ public class FilesHandler {
         return metaDataSB.toString();
     }
 
+
+    /**
+     * Devolve os bytes do ficheiro pedido.
+     * @param path Caminho para o ficheiro.
+     * @return Lista de bytes do ficheiro.
+     * @throws IOException Quando dá erro ao ler o ficheiro.
+     */
     public static byte[] fromFileToByteArray(String path) throws IOException {
         File file = new File(path);
         byte[] res = Files.readAllBytes(file.toPath());
 
-        for (byte b : res) {
-            System.out.format("0x%02X ", b);
-        }
-        System.out.println(res.length);
+        // for (byte b : res) {
+        //     System.out.format("0x%02X ", b);
+        // }
+        System.out.println(file.length());
 
         return res;
 

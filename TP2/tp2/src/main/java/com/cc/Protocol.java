@@ -37,8 +37,9 @@ public class Protocol {
             String metaDataString = allMetaDataSB.toString();
 
             byte[] metaDataBytes = metaDataString.getBytes(StandardCharsets.UTF_8);
+            Integer metaDataL = metaDataBytes.length;
 
-            for (int i = 0; metaDataBytes.length - i * metadataMaxSize > metadataMaxSize; i++) {
+            for (int i = 0; metaDataL - i * metadataMaxSize > metadataMaxSize; i++) {
                 bb = ByteBuffer.allocate(messageSize);
                 // primeiro byte que define o tipo
                 bb.put(0, (byte) 1);
@@ -191,26 +192,77 @@ public class Protocol {
         return bb.array();
     }
 
+
+
+    //Verificar se está correto
+
     // Tipo 4
     // -------------------------
     // | Tipo | Nº Seq | Dados |
     // -------------------------
-    //    1B       5B
+    // 1B 5B
     public static List<byte[]> createFileDataMessages(String path) {
+        Integer numSequencesBytes = 5;
+        Integer dataMaxSize = messageSize - 1 - numSequencesBytes;
+        Integer nSeq = 0;
+
         List<byte[]> res = new ArrayList<>();
-        ByteBuffer bb = ByteBuffer.allocate(messageSize);
+        ByteBuffer bb;
 
         try {
             byte[] data = FilesHandler.fromFileToByteArray(path);
+            Integer dataSize = data.length;
+
+            for (int i = 0; dataSize - i * dataMaxSize > dataMaxSize; i++) {
+                byte[] partData = ByteBuffer.allocate(dataMaxSize).array();
+                System.arraycopy(data, 0, partData, 0, dataMaxSize);
+                data = cutByteArray(data, dataMaxSize, data.length - dataMaxSize);
+
+                bb = ByteBuffer.allocate(messageSize);
+
+                // primeiro byte que define o tipo
+                bb.put(0, (byte) 4);
+
+                // bytes com o nº de sequências que esta transferência terá
+                byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
+                bb.put(1, numSequences, 3, numSequencesBytes);
+
+                // adiciona os bytes com os metadados à mensagem
+                bb.put(1 + numSequencesBytes, partData);
+
+                res.add(bb.array());
+            }
+
+            bb = ByteBuffer.allocate(messageSize);
+
+            // primeiro byte que define o tipo
+            bb.put(0, (byte) 4);
+
+            // bytes com o nº de sequências que esta transferência terá
+            byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
+            bb.put(1, numSequences, 3, numSequencesBytes);
+
+            // adiciona os bytes com os metadados à mensagem
+            bb.put(1 + numSequencesBytes, data);
+
+            res.add(bb.array());
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
-        // primeiro byte que define o tipo
-        bb.put(0, (byte) 3);
 
         return res;
+    }
+
+    // Tipo 20
+    // -----------------
+    // | Tipo | Nº Seq | 
+    // -----------------
+    public static byte[] createAckMessage(Integer seqNumbeInteger) {
+        ByteBuffer bb = ByteBuffer.allocate(messageSize);
+
+        return bb.array();
     }
 
     public static void main(String[] args) {
@@ -223,8 +275,10 @@ public class Protocol {
         // e.printStackTrace();
         // }
 
-        createTransferInfoMessage("src/main/java/com/cc/Protocol.java");
+        // createTransferInfoMessage("src/main/java/com/cc/Protocol.java");
 
-        // createFileDataMessages("src/main/java/com/cc/Protocol.java");
+        int size = createFileDataMessages("src/main/java/com/cc/Protocol.java").size();
+
+        System.out.println(size);
     }
 }
