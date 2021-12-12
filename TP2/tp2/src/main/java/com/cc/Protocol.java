@@ -9,8 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Protocol {
-    private static Integer messageSize = 1420;
-    private static Integer dataByteSize = 2;
+    public static Integer messageSize = 1420;
+    public static Integer dataByteSize = 2;
+    
+    public static final byte INFO_TYPE = 1;
+    public static final byte ACK_TYPE = 20;
+    public static final byte SYN_TYPE = 21;
+    public static final byte KEY_TYPE = 22;
 
     // Tipo 1
     // -----------------------------------
@@ -19,13 +24,13 @@ public class Protocol {
     // 1B 2B 2B
     public static List<byte[]> createInfoMessage(String path) {
         Integer seqNByteSize = 2;
-        Integer sequenceNumber = 0;
+        Short sequenceNumber = 0;
         Integer metadataMaxSize = messageSize - 1 - seqNByteSize - dataByteSize;
 
         List<byte[]> res = new ArrayList<>();
         ByteBuffer bb;
 
-        List<String> pathFiles = FilesHandler.readAllFilesName(path, "");
+        List<String> pathFiles = FilesHandler.readAllFilesName(path, "/");
 
         try {
             StringBuilder allMetaDataSB = new StringBuilder();
@@ -42,39 +47,40 @@ public class Protocol {
             for (int i = 0; metaDataL - i * metadataMaxSize > metadataMaxSize; i++) {
                 bb = ByteBuffer.allocate(messageSize);
                 // primeiro byte que define o tipo
-                bb.put(0, (byte) 1);
+                bb.put((byte) 1);
 
                 byte[] partMetaData = ByteBuffer.allocate(metadataMaxSize).array();
                 System.arraycopy(metaDataBytes, 0, partMetaData, 0, metadataMaxSize);
                 metaDataBytes = cutByteArray(metaDataBytes, metadataMaxSize, metaDataBytes.length - metadataMaxSize);
                 // bytes para o nº da sequencia
-                byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber++).array();
-                bb.put(1, seqBytes, 2, 2);
+                //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber++).array();
+                
+                bb.putShort(sequenceNumber);
 
                 // dois bytes para o tamanho dos dados
-                byte[] metaDataSize = ByteBuffer.allocate(4).putInt(partMetaData.length).array();
-                bb.put(1 + seqNByteSize, metaDataSize, 2, 2);
+                //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(partMetaData.length).array();
+                bb.putShort((short) partMetaData.length);
 
                 // adiciona os bytes com os metadados à mensagem
-                bb.put(1 + seqNByteSize + dataByteSize, partMetaData);
+                bb.put(partMetaData);
 
                 res.add(bb.array());
             }
             bb = ByteBuffer.allocate(messageSize);
 
             // primeiro byte que define o tipo
-            bb.put(0, (byte) 1);
+            bb.put((byte) 1);
 
             // bytes para o nº da sequencia
-            byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
-            bb.put(1, seqBytes, 2, 2);
+            //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
+            bb.putShort(sequenceNumber);
 
             // dois bytes para o tamanho dos dados
-            byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
-            bb.put(1 + seqNByteSize, metaDataSize, 2, 2);
+            //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
+            bb.putShort((short) metaDataBytes.length);
 
             // adiciona os bytes com os metadados à mensagem
-            bb.put(1 + seqNByteSize + dataByteSize, metaDataBytes);
+            bb.put(metaDataBytes);
 
             res.add(bb.array());
 
@@ -142,14 +148,14 @@ public class Protocol {
         byte[] metaDataBytes = metadata.getBytes(StandardCharsets.UTF_8);
 
         // primeiro byte que define o tipo
-        bb.put(0, (byte) 2);
+        bb.put((byte) 2);
 
         // dois bytes para o tamanho dos dados
-        byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
-        bb.put(1, metaDataSize, 2, 2);
+        //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
+        bb.putShort((short) metaDataBytes.length);
 
         // adiciona os bytes com os metadados à mensagem
-        bb.put(1 + dataByteSize, metaDataBytes);
+        bb.put(metaDataBytes);
 
         return bb.array();
     }
@@ -170,20 +176,20 @@ public class Protocol {
             byte[] metaDataBytes = metadata.getBytes(StandardCharsets.UTF_8);
 
             // primeiro byte que define o tipo
-            bb.put(0, (byte) 3);
+            bb.put((byte) 3);
 
             // bytes com o nº de sequências que esta transferência terá
             Long nSeq = file.length() / (messageSize - 1 - numSequencesBytes);
 
-            byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
-            bb.put(1, numSequences, 3, numSequencesBytes);
+            //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
+            bb.putLong(nSeq);
 
             // dois bytes para o tamanho dos metadados
-            byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
-            bb.put(1 + numSequencesBytes, metaDataSize, 2, 2);
+            //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
+            bb.putShort((short) metaDataBytes.length);
 
             // adiciona os bytes com os metadados à mensagem
-            bb.put(1 + numSequencesBytes + dataByteSize, metaDataBytes);
+            bb.put(metaDataBytes);
         } catch (IOException e) {
             System.out.println("Erro ao ler o ficheiro");
             e.printStackTrace();
@@ -219,14 +225,14 @@ public class Protocol {
                 bb = ByteBuffer.allocate(messageSize);
 
                 // primeiro byte que define o tipo
-                bb.put(0, (byte) 4);
+                bb.put((byte) 4);
 
                 // bytes com o nº de sequência da mensagem
-                byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
-                bb.put(1, numSequences, 3, numSequencesBytes);
+                //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
+                bb.putLong(nSeq);
 
                 // adiciona os bytes com os metadados à mensagem
-                bb.put(1 + numSequencesBytes, partData);
+                bb.put(partData);
 
                 res.add(bb.array());
             }
@@ -234,14 +240,14 @@ public class Protocol {
             bb = ByteBuffer.allocate(messageSize);
 
             // primeiro byte que define o tipo
-            bb.put(0, (byte) 4);
+            bb.put((byte) 4);
 
             // bytes com o nº de sequência da mensagem
-            byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
-            bb.put(1, numSequences, 3, numSequencesBytes);
+            //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
+            bb.putLong(nSeq);
 
             // adiciona os bytes com os metadados à mensagem
-            bb.put(1 + numSequencesBytes, data);
+            bb.put(data);
 
             res.add(bb.array());
         } catch (IOException e) {
@@ -257,18 +263,18 @@ public class Protocol {
     // | Tipo | Nº Seq |
     // -----------------
     public static byte[] createAckMessage(Integer seqNumber) {
-        Integer numSequencesBytes = 5;
+        //Integer numSequencesBytes = 5;
         ByteBuffer bb = ByteBuffer.allocate(messageSize);
         // primeiro byte que define o tipo
         bb.put(0, (byte) 20);
 
         // bytes com o nº de sequências que esta transferência terá
-        byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
-        bb.put(1, numSequences, 3, numSequencesBytes);
+        //byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
+        bb.putLong(1, seqNumber);
 
         return bb.array();
     }
-
+/*
     public static void main(String[] args) {
         // List<byte[]> info = createInfoMessage("src/main/java/com/cc/");
 
@@ -285,4 +291,5 @@ public class Protocol {
 
         System.out.println(size);
     }
+*/
 }
