@@ -1,75 +1,37 @@
 package com.cc;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 public class Encryption {
-    Integer privKey;
-    Integer p = 103079;
-    Integer g = 7;
+    private String DEBUG_PREFIX;
+    private Integer privKey;
+    private Integer p = 103079;
+    private Integer g = 7;
     
-    BigInteger pubKey;
-    BigInteger sharedKey;
+    private BigInteger pubKey;
+    private BigInteger sharedKey;
 
-    DatagramSocket listener;
-    DatagramSocket sender;
-
-    InetAddress ip;
-    int port;
-
-    public Encryption(InetAddress ip, DatagramSocket listenSocket, int sendPort) throws SocketException {
-        listener = listenSocket;
-        sender = new DatagramSocket();
-        this.ip = ip;
-        port = sendPort;
-
+    public Encryption(String DEBUG_PREFIX) throws SocketException {
+        this.DEBUG_PREFIX = DEBUG_PREFIX;
         Random r = new Random();
         privKey = r.nextInt(p);
     }
 
-    public void auth() throws IOException {
+    public byte[] calcPublicKey() {
         // Calculate public Key = (g^PrivKey) % p
         pubKey = new BigInteger(g.toString()).pow(privKey).remainder(new BigInteger(p.toString()));
-
-        System.out.println("PrivKey: " + privKey + " PubKey: " + pubKey);
-
-        // Início da conexão
-        byte[] outBuff = "SYN".getBytes(StandardCharsets.UTF_8);
-        DatagramPacket outPacket = new DatagramPacket(outBuff, outBuff.length, ip, port);
-        sender.send(outPacket);
-
-        byte[] inBuff = new byte[512];
-        DatagramPacket inPacket = new DatagramPacket(inBuff, inBuff.length);
-        listener.receive(inPacket);
-
-        String msg = new String(inPacket.getData(),0,inPacket.getLength(),StandardCharsets.UTF_8);
-        if(msg.equals("SYN")) {
-            outBuff = "SYN/ACK".getBytes(StandardCharsets.UTF_8);
-            outPacket = new DatagramPacket(outBuff, outBuff.length, ip, port);
-            sender.send(outPacket);
-        }
-        System.out.println("ACK received. Connection established...");
-
-        // Sends this machine's public key
-        outBuff = pubKey.toString().getBytes(StandardCharsets.UTF_8);
-        outPacket = new DatagramPacket(outBuff, outBuff.length, ip, port);
-        sender.send(outPacket);
-
-        // Obtains the other public key
-        listener.receive(inPacket);
-        msg = new String(inPacket.getData(),0,inPacket.getLength(),StandardCharsets.UTF_8);
-
-        // Calculates the shared key = (otherPubKey^PrivKey) % p
-        sharedKey = new BigInteger(msg).pow(privKey).remainder(new BigInteger(p.toString()));
-
-        System.out.println("Other: " + msg + " SharedKey: " + sharedKey);
+        System.out.println(DEBUG_PREFIX + "PrivKey: " + privKey + " PubKey: " + pubKey);
+        return pubKey.toByteArray();
     }
+
+    public void calcSharedKey(byte[] otherKey) {
+        // Calculates the shared key = (otherPubKey^PrivKey) % p
+        sharedKey = new BigInteger(otherKey).pow(privKey).remainder(new BigInteger(p.toString()));
+        System.out.println(DEBUG_PREFIX + "SharedKey: " + sharedKey);
+    }
+
 
     public byte[] encrypt(byte[] array, int length) {
         byte[] cypher = new byte[length];

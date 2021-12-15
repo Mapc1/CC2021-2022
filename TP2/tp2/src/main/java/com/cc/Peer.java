@@ -1,7 +1,6 @@
 package com.cc;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -13,16 +12,12 @@ public class Peer
         Thread client;
 
         InetAddress ip = InetAddress.getByName(args[2]);
-        DatagramSocket listenSocket = new DatagramSocket(Integer.parseInt(args[0]));
+        int listenPort = Integer.parseInt(args[0]);
         int sendPort = Integer.parseInt(args[1]);
 
-        Encryption encrypt = new Encryption(ip, listenSocket, sendPort);
-
         try {
-            encrypt.auth();
-
-            server = new Thread(new ServerHandler(listenSocket,encrypt));
-            client = new Thread(new ClientHandler(Integer.parseInt(args[1]), args[2], encrypt));
+            server = new Thread(new ServerHandler(listenPort));
+            client = new Thread(new ClientHandler(sendPort, ip));
             client.start();
             server.start();
 
