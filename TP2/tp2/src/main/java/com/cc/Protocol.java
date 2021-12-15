@@ -16,6 +16,7 @@ public class Protocol {
     public static final byte ACK_TYPE = 20;
     public static final byte SYN_TYPE = 21;
     public static final byte KEY_TYPE = 22;
+    public static final byte SEQ_TYPE = 23;
 
     // Tipo 1
     // -----------------------------------
@@ -62,7 +63,7 @@ public class Protocol {
                 // bytes para o nº da sequencia
                 //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber++).array();
                 
-                bb.putShort(sequenceNumber);
+                bb.putShort(sequenceNumber++);
 
                 // dois bytes para o tamanho dos dados
                 //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(partMetaData.length).array();
@@ -210,15 +211,15 @@ public class Protocol {
 
         Long nSeq = 1 + size / (messageSize - 1 - numSequencesBytes);
 
-        byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
-        bb.put(1, numSequences, 3, numSequencesBytes);
+        //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
+        bb.putLong(nSeq);
 
         // dois bytes para o tamanho dos metadados
-        byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
-        bb.put(1 + numSequencesBytes, metaDataSize, 2, 2);
+        //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
+        bb.putInt(metaDataBytes.length);
 
         // adiciona os bytes com os metadados à mensagem
-        bb.put(1 + numSequencesBytes + dataByteSize, metaDataBytes);
+        bb.put(metaDataBytes);
 
         return bb.array();
     }
