@@ -24,6 +24,9 @@ public class FilesHandler {
 
         // List of all files and directories
         String contents[] = directoryPath.list();
+        if (contents == null)
+            return res;
+
         for (int i = 0; i < contents.length; i++) {
             res.add(dir + contents[i]);
             File f = new File(path + dir + contents[i]);
@@ -35,22 +38,35 @@ public class FilesHandler {
     }
 
     // adicionar o nome da diretoria
-    public static String createMetaDataString(File file) throws IOException {
+    public static String createMetaDataString(File file, String directory) throws IOException {
         BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
 
+        System.out.println(file.getPath());
         StringBuilder metaDataSB = new StringBuilder();
         metaDataSB.append("name:").append(file.getName()).append(";");
+        metaDataSB.append("directory:").append(directory).append(";");
         metaDataSB.append("isDirectory:").append(attr.isDirectory()).append(";");
         metaDataSB.append("size:").append(attr.size()).append(";");
         metaDataSB.append("creationTime:").append(attr.creationTime()).append(";");
-        metaDataSB.append("lastModifiedTime:").append(attr.lastModifiedTime()).append("//");
+        metaDataSB.append("lastModifiedTime:").append(attr.lastModifiedTime());
 
         return metaDataSB.toString();
     }
 
+    /**
+     * Método que devolve o tamanho do ficheiro a que os metadados pertencem
+     * @param metadata Metadados do ficheiro
+     * @return Tamanho do ficheiro
+     */
+    public static Long getSizeFromMetaData(String metadata) {
+        String[] parts = metadata.split(";");
+        String[] sizeParts = parts[3].split(":");
+        return Long.parseLong(sizeParts[1]);
+    }
 
     /**
      * Devolve os bytes do ficheiro pedido.
+     * 
      * @param path Caminho para o ficheiro.
      * @return Lista de bytes do ficheiro.
      * @throws IOException Quando dá erro ao ler o ficheiro.
@@ -60,12 +76,16 @@ public class FilesHandler {
         byte[] res = Files.readAllBytes(file.toPath());
 
         // for (byte b : res) {
-        //     System.out.format("0x%02X ", b);
+        // System.out.format("0x%02X ", b);
         // }
         System.out.println(file.length());
 
         return res;
 
     }
+
+    // public static Boolean createFile(byte[] data, String metadata) {
+
+    // }
 
 }

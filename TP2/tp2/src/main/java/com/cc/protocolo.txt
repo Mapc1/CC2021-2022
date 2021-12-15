@@ -6,6 +6,9 @@ Tipos de mensagem
 20 - ack
 44 - erros
 
+falta
+erros
+
 Tipo 1
 -----------------------------------
 | Tipo | Nº Seq | Size | Metadados|
@@ -17,7 +20,6 @@ Tipo 2
 | Tipo | Size | Metadadados |   
 -----------------------------
    1B     2B
-Será que pode chegar a precisar de enviar outro pacote?
 
 Tipo 3
 ------------------------------------------
@@ -33,7 +35,7 @@ Tipo 4
 
 
 Tipo 20
------------------
-| Tipo | Nº Seq | 
------------------
+---------------------------------
+| Tipo | Tipo Mensagem | Nº Seq | 
+---------------------------------
 
