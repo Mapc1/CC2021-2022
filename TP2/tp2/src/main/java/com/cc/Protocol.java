@@ -286,8 +286,8 @@ public class Protocol {
                 bb.put((byte) 4);
 
                 // bytes com o nº de sequência da mensagem
-                //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
-                bb.putLong(nSeq);
+                byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
+                bb.put(1, numSequences, 3, numSequencesBytes);
 
                 // adiciona os bytes com os metadados à mensagem
                 bb.put(partData);
@@ -371,8 +371,20 @@ public class Protocol {
         bb.put(1, (byte) (int) messageType);
 
         // bytes com o nº de sequências que esta transferência terá
-        //byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
-        bb.putLong(1, seqNumber);
+        byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
+        bb.put(1, numSequences, 3, numSequencesBytes);
+
+        return bb.array();
+    }
+
+    public static byte[] createAckMessage(Integer messageType) {
+        ByteBuffer bb = ByteBuffer.allocate(messageSize);
+
+        // primeiro byte que define o tipo
+        bb.put(0, (byte) 20);
+
+        // byte que indica o tipo da mensagem a que está a responder
+        bb.put(1, (byte) (int) messageType);
 
         return bb.array();
     }
