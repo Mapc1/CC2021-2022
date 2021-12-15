@@ -131,7 +131,7 @@ public class ServerHandler implements Runnable {
                     ByteBuffer data = ByteBuffer.wrap(ackPacket.getData());
 
                     byte answerType = data.get();
-                    long ackSeq = data.getLong();
+                    long ackSeq = data.getLong(2);
 
                     if(answerType == Protocol.ACK_TYPE) {
                         System.out.println(DEBUG_PREFIX + "ACK received nº " + ackSeq);
@@ -169,7 +169,7 @@ public class ServerHandler implements Runnable {
             try {
                 socket.receive(ackPacket);
                 //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
-                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(1);
+                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(2);
                 if(ackBuffer[0] == Protocol.ACK_TYPE && ackSeqs == nSeqs) {
                     ack = true;
                 }            

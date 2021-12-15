@@ -286,8 +286,8 @@ public class Protocol {
                 bb.put((byte) 4);
 
                 // bytes com o nº de sequência da mensagem
-                byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
-                bb.put(1, numSequences, 3, numSequencesBytes);
+                //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
+                bb.putLong(nSeq++);
 
                 // adiciona os bytes com os metadados à mensagem
                 bb.put(partData);
@@ -367,12 +367,12 @@ public class Protocol {
         Integer numSequencesBytes = 5;
         ByteBuffer bb = ByteBuffer.allocate(messageSize);
         // primeiro byte que define o tipo
-        bb.put(0, (byte) 20);
-        bb.put(1, (byte) (int) messageType);
+        bb.put((byte) 20);
+        bb.put((byte) (int) messageType);
 
         // bytes com o nº de sequências que esta transferência terá
-        byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
-        bb.put(1, numSequences, 3, numSequencesBytes);
+        //byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
+        bb.putLong(seqNumber);
 
         return bb.array();
     }
