@@ -13,6 +13,7 @@ public class Protocol {
     public static Integer dataByteSize = 2;
     
     public static final byte INFO_TYPE = 1;
+    public static final byte FILE_TYPE = 4;
     public static final byte ACK_TYPE = 20;
     public static final byte SYN_TYPE = 21;
     public static final byte KEY_TYPE = 22;
@@ -257,15 +258,15 @@ public class Protocol {
      * Protocolo da mensagem (tipo 4):
      * <p>
      * 
-     * | Tipo (1B) | Nº Seq (5B) | Dados |
+     * | Tipo (1B) | Nº Seq (8B) | Size (2B) | Dados |
      * <p>
      * 
      * @param path Caminho para o ficheiro
      * @return Lista com as mensagens com a informação
      */
     public static List<byte[]> createFileDataMessages(String path) {
-        Integer numSequencesBytes = 5;
-        Integer dataMaxSize = messageSize - 1 - numSequencesBytes;
+        Integer numSequencesBytes = 8;
+        Integer dataMaxSize = messageSize - 3 - numSequencesBytes;
         Integer nSeq = 0;
 
         List<byte[]> res = new ArrayList<>();
@@ -283,12 +284,15 @@ public class Protocol {
                 bb = ByteBuffer.allocate(messageSize);
 
                 // primeiro byte que define o tipo
-                bb.put((byte) 4);
+                bb.put(Protocol.FILE_TYPE);
 
                 // bytes com o nº de sequência da mensagem
                 //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq++).array();
                 bb.putLong(nSeq++);
 
+                // Data size
+                bb.putShort((short) partData.length);
+                
                 // adiciona os bytes com os metadados à mensagem
                 bb.put(partData);
 
@@ -303,6 +307,8 @@ public class Protocol {
             // bytes com o nº de sequência da mensagem
             //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
             bb.putLong(nSeq);
+
+            bb.putShort((short) data.length);
 
             // adiciona os bytes com os metadados à mensagem
             bb.put(data);

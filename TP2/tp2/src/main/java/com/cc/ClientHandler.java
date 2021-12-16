@@ -1,5 +1,7 @@
 package com.cc;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -8,6 +10,9 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,8 +49,9 @@ public class ClientHandler implements Runnable {
     public void run() {
         try {
             connect();
-			String metadata = getMetaData();
-            System.out.println(metadata);
+			//String metadata = getMetaData();
+            //System.out.println(metadata);
+            getFileData("/home/marco/Vídeos/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");       
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -112,6 +118,61 @@ public class ClientHandler implements Runnable {
         System.out.println(DEBUG_PREFIX + "We're connected! YAY");
     }
 
+    private void getFileData(String metadata) throws IOException {
+        String[] dados = metadata.split(";");
+        String filePath = dados[0];
+        File f = new File(filePath);
+        FileOutputStream fos = new FileOutputStream(f);
+
+        f.createNewFile();
+        
+        byte[] buffer = new byte[Protocol.messageSize];
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+        long nSeqs = receiveNSeqs();
+        long seqNum = 0;
+
+        long start = 0;
+        for(long i = 0; i < nSeqs; i++) {
+            boolean received = false;
+            while(!received) {
+                try {
+                    socket.receive(packet);
+                    long end = System.currentTimeMillis();
+                    //calculateRTT(start, end);
+
+                    ByteBuffer bb = ByteBuffer.wrap(packet.getData());
+                    byte type = bb.get();
+
+                    if(type == Protocol.FILE_TYPE) {
+                        sendAck(type, seqNum);
+                        start = System.currentTimeMillis();
+                        long msgSeq = bb.getLong();
+                        if(msgSeq == seqNum) {
+                            short size = bb.getShort();
+                            byte[] msg = new byte[size];
+                            System.arraycopy(bb.array(), 11, msg, 0, size); 
+                            fos.write(msg);
+                            System.out.println(DEBUG_PREFIX + "Packet nº " + seqNum + " of " + nSeqs + " received.");
+                            seqNum++;
+                            received = true;
+                        }
+                    }
+                } catch (SocketTimeoutException e) {
+                    System.err.println(DEBUG_PREFIX + "Timeout reached. Resending ACK...");
+                    sendAck(Protocol.FILE_TYPE, seqNum);
+                }
+            }
+        }
+        FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(dados[4]));
+        FileTime accessTime = FileTime.fromMillis(Long.parseLong(dados[6]));
+        FileTime createTime = FileTime.fromMillis(Long.parseLong(dados[5]));
+
+        BasicFileAttributeView attr = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
+        attr.setTimes(modifiedTime, accessTime, createTime);
+        fos.close();
+    }
+
     private String getMetaData() throws IOException {
         List<byte[]> dados = new ArrayList<>();
 
@@ -129,19 +190,19 @@ public class ClientHandler implements Runnable {
                     socket.receive(recvPacket);
                     //byte[] decrypted = e.decrypt(recvPacket.getData(), recvPacket.getData().length);
                     long end = System.currentTimeMillis();
-                    calculateRTT(start, end);
+                    //calculateRTT(start, end);
 
                     ByteBuffer bb = ByteBuffer.wrap(recvPacket.getData());
-                    int type = bb.get();
+                    byte type = bb.get();
 
                     if(type == Protocol.INFO_TYPE) {
                         sendAck(Protocol.INFO_TYPE, seqNum);
                         start = System.currentTimeMillis();
                         short msgSeq = bb.getShort();
                         if(msgSeq == seqNum) {
-                            byte[] msg = new byte[Protocol.messageSize];
                             short size = bb.getShort(); 
-                            ByteBuffer.wrap(recvBuff).get(msg,3,size);
+                            byte[] msg = new byte[size];
+                            System.arraycopy(bb.array(), 5, msg, 0, size);
                             dados.add(msg);
                             System.out.println(DEBUG_PREFIX + "Packet nº " + seqNum + " received");
                             seqNum++;
@@ -171,7 +232,7 @@ public class ClientHandler implements Runnable {
         System.out.println(s);
         return s;
     }
-    
+
     private void calculateRTT(long start, long end) throws SocketException {
         if(start != 0) {
             long sampleRTT = end - start;

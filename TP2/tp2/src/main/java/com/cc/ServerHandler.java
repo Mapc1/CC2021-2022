@@ -1,5 +1,7 @@
 package com.cc;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -7,6 +9,8 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class ServerHandler implements Runnable { 
@@ -36,7 +40,8 @@ public class ServerHandler implements Runnable {
     public void run() {
         try {
             connect();
-			sendMetaData("/home/marco/teste");
+		    //sendMetaData("/home/marco/teste");
+            sendFileData("/home/marco/teste/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -106,6 +111,69 @@ public class ServerHandler implements Runnable {
         System.out.println(DEBUG_PREFIX + "We're connected! YAY");
     }
 
+    private void sendFileData(String metadata) throws IOException {
+        String filePath = metadata.split(";")[0];
+
+        //List<byte[]> data = Protocol.createFileDataMessages(filePath);
+        byte[] listenBuff = new byte[Protocol.messageSize];
+
+        File f = new File(filePath);
+        FileInputStream fis = new FileInputStream(f);
+
+        long fileSize = Files.size(Paths.get(filePath));
+        long nSeqs = fileSize / (Protocol.messageSize - 11);
+        if((fileSize % (Protocol.messageSize - 11)) != 0) {
+            nSeqs++;
+        }
+        sendNSeqs(nSeqs);
+
+        long processed = 0;
+        long i = 0;
+        while(i < nSeqs) {
+            byte[] pacote = fis.readNBytes(Protocol.messageSize - 11);
+            ByteBuffer pacoteBB = ByteBuffer.allocate(Protocol.messageSize);
+            pacoteBB.put(Protocol.FILE_TYPE);
+            pacoteBB.putLong(i);
+            pacoteBB.putShort((short) pacote.length);
+            pacoteBB.put(pacote);
+
+            //byte[] pacote = data.get((int) i);
+            DatagramPacket packet = new DatagramPacket(pacoteBB.array(), pacoteBB.array().length, clientIP, clientPort);
+            DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
+
+            socket.send(packet);
+            System.out.println(DEBUG_PREFIX + "Packet nº " + i + " sent. Awaiting response...");
+
+            boolean sent = false;
+            while(!sent) {
+                try {
+                    socket.receive(ackPacket);
+                    ByteBuffer bb = ByteBuffer.wrap(ackPacket.getData());
+
+                    byte answerType = bb.get();
+                    long ackSeq = bb.getLong(2);
+
+                    if(answerType == Protocol.ACK_TYPE) {
+                        System.out.println(DEBUG_PREFIX + "ACK received nº " + ackSeq);
+
+                        sent = true;
+                        if(ackSeq == i) {
+                            processed += pacote.length;
+                            System.out.println("Processed " + processed + " bytes of " + fileSize + " bytes");
+                            i++;
+                        } else {
+                            i = ackSeq + 1;
+                        }
+                    }
+                } catch (SocketTimeoutException e) {
+                    socket.send(packet);
+                    System.err.println(DEBUG_PREFIX + "Timeout. Resending packet nº " + i);
+                }
+            }
+        }
+        fis.close();
+    }
+
     private void sendMetaData(String path) throws IOException {
         List<byte[]> pacotes = Protocol.createInfoMessage(path);
         byte[] listenBuff = new byte[Protocol.messageSize];
@@ -114,7 +182,7 @@ public class ServerHandler implements Runnable {
         sendNSeqs(nSeqs);
 
         long i = 0;
-        while(i < pacotes.size()) {
+        while(i < nSeqs) {
             byte[] pacote = pacotes.get((int) i);
             //byte[] encrypted = e.encrypt(pacote, pacote.length);
             DatagramPacket packet = new DatagramPacket(pacote, pacote.length, clientIP, clientPort);

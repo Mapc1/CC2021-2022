@@ -43,13 +43,20 @@ public class FilesHandler {
 
         System.out.println(file.getPath());
         StringBuilder metaDataSB = new StringBuilder();
-        metaDataSB.append("name:").append(file.getName()).append(";");
+        metaDataSB.append(file.getName()).append(";");
+        metaDataSB.append(directory).append(";");
+        metaDataSB.append(attr.isDirectory()).append(";");
+        metaDataSB.append(attr.size()).append(";");
+        metaDataSB.append(attr.lastModifiedTime().toMillis()).append(";");
+        metaDataSB.append(attr.lastAccessTime().toMillis());
+        metaDataSB.append(attr.creationTime().toMillis()).append(";");
+        /*metaDataSB.append("name:").append(file.getName()).append(";");
         metaDataSB.append("directory:").append(directory).append(";");
         metaDataSB.append("isDirectory:").append(attr.isDirectory()).append(";");
         metaDataSB.append("size:").append(attr.size()).append(";");
         metaDataSB.append("creationTime:").append(attr.creationTime()).append(";");
         metaDataSB.append("lastModifiedTime:").append(attr.lastModifiedTime());
-
+*/
         return metaDataSB.toString();
     }
 
