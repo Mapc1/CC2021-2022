@@ -75,11 +75,6 @@ public class FilesHandler {
         File file = new File(path);
         byte[] res = Files.readAllBytes(file.toPath());
 
-        // for (byte b : res) {
-        // System.out.format("0x%02X ", b);
-        // }
-        System.out.println(file.length());
-
         return res;
 
     }
