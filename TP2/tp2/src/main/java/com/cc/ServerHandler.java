@@ -16,32 +16,67 @@ import java.util.List;
 public class ServerHandler implements Runnable { 
     private static final String DEBUG_PREFIX = "Server: ";
 
-    DatagramSocket socket;
     Encryption e;
+    
+    DatagramSocket socket;
     int clientPort;
     InetAddress clientIP;
+
     double estimatedRTT = 4000;
     double devRTT = 100;
+    
+    DatagramPacket connectPacket;
+    DatagramPacket requestPacket;
+    String syncFolder;
 
-    public ServerHandler(Encryption e, int serverPort) throws SocketException {
-        this.e = e;
-        this.socket = new DatagramSocket(serverPort);
+    public ServerHandler(DatagramPacket packet, String folder) throws SocketException {
+        e = new Encryption(DEBUG_PREFIX);
+
+        clientPort = packet.getPort();
+        clientIP = packet.getAddress();
+
+        socket = new DatagramSocket();
         socket.setSoTimeout((int) estimatedRTT);
-        System.out.println(DEBUG_PREFIX + "Connection open in: " + serverPort);
+
+        requestPacket = packet;
+        this.syncFolder = folder;
     }
     
-    public ServerHandler(int serverPort) throws SocketException {
-        this.e = new Encryption(DEBUG_PREFIX);
-        this.socket = new DatagramSocket(serverPort);
-        socket.setSoTimeout((int) estimatedRTT);
-        System.out.println(DEBUG_PREFIX + "Connection open in: " + serverPort);
-    }
-
     public void run() {
         try {
-            connect();
-		    //sendMetaData("/home/marco/teste");
-            sendFileData("/home/marco/teste/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");
+            //connect();
+/*
+            byte[] reqBuff = new byte[Protocol.messageSize];
+            DatagramPacket requestPacket = new DatagramPacket(reqBuff, reqBuff.length);
+
+            boolean requestReceived = false;
+            while(!requestReceived) {
+                try {
+                    socket.receive(requestPacket);
+                    requestReceived = true;
+                } catch (SocketTimeoutException e) {}
+            }
+*/
+            byte[] ackBuff = Protocol.createAckMessage((int) Protocol.LS_TYPE);
+            DatagramPacket ackPacket = new DatagramPacket(ackBuff, ackBuff.length, clientIP, clientPort);
+            socket.send(ackPacket);
+
+            ByteBuffer requestBB = ByteBuffer.wrap(requestPacket.getData());
+            byte requestType = requestBB.get();
+		    
+            switch(requestType) {
+                case Protocol.LS_TYPE : sendMetaData(syncFolder); break;
+                case Protocol.FILE_REQ_TYPE :
+                    short size = requestBB.getShort();
+                    byte[] buf = new byte[size];
+                    System.arraycopy(requestBB.array(), 3, buf, 0, size);
+                    String metadata = new String(buf);
+                    sendFileData(metadata);
+                    break;
+            }
+            
+            //sendMetaData("/home/marco/teste");
+            //sendFileData("/home/marco/teste/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -52,10 +87,21 @@ public class ServerHandler implements Runnable {
 
     private void connect() throws IOException {
         byte[] inBuffer = new byte[Protocol.messageSize];
-        byte[] otherKeyArr = new byte[Protocol.messageSize];
 
         DatagramPacket inPacket = new DatagramPacket(inBuffer, inBuffer.length);
-        boolean otherKeyReceived = false;
+        
+        byte[] ack = { Protocol.ACK_TYPE };
+        DatagramPacket outPacket = new DatagramPacket(ack, ack.length, clientIP, clientPort);
+        socket.send(outPacket);
+
+        ByteBuffer otherKeyBB = ByteBuffer.wrap(connectPacket.getData());
+        byte type = otherKeyBB.get();
+        short size = otherKeyBB.getShort();
+
+        byte[] otherKeyArr = new byte[size];
+        System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
+
+        /*boolean otherKeyReceived = false;
         while(!otherKeyReceived) {
             try {
                 socket.receive(inPacket);
@@ -69,30 +115,30 @@ public class ServerHandler implements Runnable {
                     System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
                     otherKeyReceived = true;
 
-                    clientPort = inPacket.getPort();
-                    clientIP = inPacket.getAddress();
+                    serverPort = inPacket.getPort();
+                    serverIP = inPacket.getAddress();
 
                     byte[] ack = new byte[1];
                     ack[0] = Protocol.ACK_TYPE;
 
-                    DatagramPacket outPacket = new DatagramPacket(ack, ack.length, clientIP, clientPort);
+                    DatagramPacket outPacket = new DatagramPacket(ack, ack.length, serverIP, serverPort);
                     socket.send(outPacket);
                 }
             } catch (SocketTimeoutException e) {
                 System.err.println(DEBUG_PREFIX + "Did not receive anything. Still waiting...");
             }
         }
-
+*/
         byte[] publicKey = e.calcPublicKey();
         e.calcSharedKey(otherKeyArr);
 
-        short size = (short) publicKey.length;
+        size = (short) publicKey.length;
         ByteBuffer pubKeyBB = ByteBuffer.allocate(3+size);
         pubKeyBB.put(Protocol.KEY_TYPE);
         pubKeyBB.putShort(size);
         pubKeyBB.put(publicKey);
 
-        DatagramPacket outPacket = new DatagramPacket(pubKeyBB.array(), pubKeyBB.array().length, clientIP, clientPort);
+        outPacket = new DatagramPacket(pubKeyBB.array(), pubKeyBB.array().length, clientIP, clientPort);
 
         boolean ackReceived = false;
         while(!ackReceived) {
@@ -112,7 +158,7 @@ public class ServerHandler implements Runnable {
     }
 
     private void sendFileData(String metadata) throws IOException {
-        String filePath = metadata.split(";")[0];
+        String filePath = syncFolder + "/" + metadata.split(";")[0];
 
         //List<byte[]> data = Protocol.createFileDataMessages(filePath);
         byte[] listenBuff = new byte[Protocol.messageSize];

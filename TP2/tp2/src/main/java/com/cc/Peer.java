@@ -3,7 +3,6 @@ package com.cc;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 public class Peer 
 {
@@ -11,19 +10,19 @@ public class Peer
         Thread server;
         Thread client;
 
-        InetAddress ip = InetAddress.getByName(args[2]);
-        int listenPort = Integer.parseInt(args[0]);
-        int sendPort = Integer.parseInt(args[1]);
+        InetAddress ip = InetAddress.getByName(args[3]);
+        int listenPort = Integer.parseInt(args[1]);
+        int sendPort = Integer.parseInt(args[2]);
 
         try {
-            server = new Thread(new ServerHandler(listenPort));
-            client = new Thread(new ClientHandler(sendPort, ip));
+            server = new Thread(new Server(args[0], listenPort));
+            client = new Thread(new Client(args[0], sendPort, ip));
             client.start();
             server.start();
 
             server.join();
             client.join();
-        } catch (NumberFormatException | UnknownHostException | SocketException e) {
+        } catch (NumberFormatException | SocketException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();

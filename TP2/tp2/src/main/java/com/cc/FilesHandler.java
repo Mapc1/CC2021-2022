@@ -3,9 +3,12 @@ package com.cc;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FilesHandler {
 
@@ -16,8 +19,9 @@ public class FilesHandler {
      * @param path Caminho base a procurar
      * @param dir  Diretoria no caminho aonde queremos procurar
      * @return Lista com o nome dos Ficheiros/diretorias
+     * @throws IOException
      */
-    public static List<String> readAllFilesName(String path, String dir) {
+    /*public static List<String> readAllFilesName(String path, String dir) {
         List<String> res = new ArrayList<>();
 
         File directoryPath = new File(path + dir);
@@ -36,20 +40,40 @@ public class FilesHandler {
         }
         return res;
     }
+*/
+
+    public static List<String> readAllFilesName(String filePath) throws IOException {
+        List<String> files = Files.walk(Paths.get(filePath)).map(path -> {
+            String metadata = null;
+            try {
+                metadata = createMetaDataString(path.toFile());
+                metadata = metadata.substring(filePath.length());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return metadata;
+        }).collect(Collectors.toList());
+
+        files.remove(0);
+
+        
+
+        return files;
+    }
 
     // adicionar o nome da diretoria
-    public static String createMetaDataString(File file, String directory) throws IOException {
+    public static String createMetaDataString(File file) throws IOException {
         BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
 
         System.out.println(file.getPath());
         StringBuilder metaDataSB = new StringBuilder();
-        metaDataSB.append(file.getName()).append(";");
-        metaDataSB.append(directory).append(";");
+        metaDataSB.append(file.getPath()).append(";");
+        //metaDataSB.append(directory).append(";");
         metaDataSB.append(attr.isDirectory()).append(";");
         metaDataSB.append(attr.size()).append(";");
         metaDataSB.append(attr.lastModifiedTime().toMillis()).append(";");
-        metaDataSB.append(attr.lastAccessTime().toMillis());
-        metaDataSB.append(attr.creationTime().toMillis()).append(";");
+        metaDataSB.append(attr.lastAccessTime().toMillis()).append(";");
+        metaDataSB.append(attr.creationTime().toMillis());
         /*metaDataSB.append("name:").append(file.getName()).append(";");
         metaDataSB.append("directory:").append(directory).append(";");
         metaDataSB.append("isDirectory:").append(attr.isDirectory()).append(";");
