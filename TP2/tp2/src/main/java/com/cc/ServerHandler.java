@@ -1,5 +1,7 @@
 package com.cc;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -7,6 +9,8 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class ServerHandler implements Runnable { 
@@ -17,26 +21,27 @@ public class ServerHandler implements Runnable {
     int clientPort;
     InetAddress clientIP;
     double estimatedRTT = 4000;
-    double devRTT = 5000;
+    double devRTT = 100;
 
     public ServerHandler(Encryption e, int serverPort) throws SocketException {
         this.e = e;
         this.socket = new DatagramSocket(serverPort);
-        socket.setSoTimeout((int) devRTT);
+        socket.setSoTimeout((int) estimatedRTT);
         System.out.println(DEBUG_PREFIX + "Connection open in: " + serverPort);
     }
     
     public ServerHandler(int serverPort) throws SocketException {
         this.e = new Encryption(DEBUG_PREFIX);
         this.socket = new DatagramSocket(serverPort);
-        socket.setSoTimeout((int) devRTT);
+        socket.setSoTimeout((int) estimatedRTT);
         System.out.println(DEBUG_PREFIX + "Connection open in: " + serverPort);
     }
 
     public void run() {
         try {
             connect();
-			//sendMetaData("/home/core/Desktop/teste");
+		    //sendMetaData("/home/marco/teste");
+            sendFileData("/home/marco/teste/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -54,7 +59,7 @@ public class ServerHandler implements Runnable {
         while(!otherKeyReceived) {
             try {
                 socket.receive(inPacket);
-                
+
                 ByteBuffer otherKeyBB = ByteBuffer.wrap(inPacket.getData());
                 byte type = otherKeyBB.get();
                 if(type == Protocol.KEY_TYPE) {
@@ -106,30 +111,138 @@ public class ServerHandler implements Runnable {
         System.out.println(DEBUG_PREFIX + "We're connected! YAY");
     }
 
+    private void sendFileData(String metadata) throws IOException {
+        String filePath = metadata.split(";")[0];
+
+        //List<byte[]> data = Protocol.createFileDataMessages(filePath);
+        byte[] listenBuff = new byte[Protocol.messageSize];
+
+        File f = new File(filePath);
+        FileInputStream fis = new FileInputStream(f);
+
+        long fileSize = Files.size(Paths.get(filePath));
+        long nSeqs = fileSize / (Protocol.messageSize - 11);
+        if((fileSize % (Protocol.messageSize - 11)) != 0) {
+            nSeqs++;
+        }
+        sendNSeqs(nSeqs);
+
+        long processed = 0;
+        long i = 0;
+        while(i < nSeqs) {
+            byte[] pacote = fis.readNBytes(Protocol.messageSize - 11);
+            ByteBuffer pacoteBB = ByteBuffer.allocate(Protocol.messageSize);
+            pacoteBB.put(Protocol.FILE_TYPE);
+            pacoteBB.putLong(i);
+            pacoteBB.putShort((short) pacote.length);
+            pacoteBB.put(pacote);
+
+            //byte[] pacote = data.get((int) i);
+            DatagramPacket packet = new DatagramPacket(pacoteBB.array(), pacoteBB.array().length, clientIP, clientPort);
+            DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
+
+            socket.send(packet);
+            System.out.println(DEBUG_PREFIX + "Packet nº " + i + " sent. Awaiting response...");
+
+            boolean sent = false;
+            while(!sent) {
+                try {
+                    socket.receive(ackPacket);
+                    ByteBuffer bb = ByteBuffer.wrap(ackPacket.getData());
+
+                    byte answerType = bb.get();
+                    long ackSeq = bb.getLong(2);
+
+                    if(answerType == Protocol.ACK_TYPE) {
+                        System.out.println(DEBUG_PREFIX + "ACK received nº " + ackSeq);
+
+                        sent = true;
+                        if(ackSeq == i) {
+                            processed += pacote.length;
+                            System.out.println("Processed " + processed + " bytes of " + fileSize + " bytes");
+                            i++;
+                        } else {
+                            i = ackSeq + 1;
+                        }
+                    }
+                } catch (SocketTimeoutException e) {
+                    socket.send(packet);
+                    System.err.println(DEBUG_PREFIX + "Timeout. Resending packet nº " + i);
+                }
+            }
+        }
+        fis.close();
+    }
+
     private void sendMetaData(String path) throws IOException {
         List<byte[]> pacotes = Protocol.createInfoMessage(path);
         byte[] listenBuff = new byte[Protocol.messageSize];
 
-        for(byte[] pacote: pacotes) {
+        long nSeqs = pacotes.size();
+        sendNSeqs(nSeqs);
+
+        long i = 0;
+        while(i < nSeqs) {
+            byte[] pacote = pacotes.get((int) i);
+            //byte[] encrypted = e.encrypt(pacote, pacote.length);
             DatagramPacket packet = new DatagramPacket(pacote, pacote.length, clientIP, clientPort);
             DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
+            
+            socket.send(packet);
+            System.out.println(DEBUG_PREFIX + "Packet nº " + i + " sent. Awaiting response...");
 
-            int sent = 0;
+            boolean sent = false;
+            while(!sent) {
+                try {
+                    socket.receive(ackPacket);
+                    //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
+                    ByteBuffer data = ByteBuffer.wrap(ackPacket.getData());
 
-            while(sent == 0) {
-                socket.send(packet);
+                    byte answerType = data.get();
+                    long ackSeq = data.getLong(2);
 
-                socket.receive(ackPacket);
-                ByteBuffer data = ByteBuffer.wrap(ackPacket.getData());
-                ByteBuffer bbPacote = ByteBuffer.wrap(pacote);
+                    if(answerType == Protocol.ACK_TYPE) {
+                        System.out.println(DEBUG_PREFIX + "ACK received nº " + ackSeq);
 
-                byte answerType = data.get();
-                short ackSeq = data.getShort();
-                short pacoteSeq = bbPacote.getShort(1);
+                        sent = true;
+                        if(ackSeq == i) {
+                            i++;
+                        } else {
+                            i = ackSeq + 1;
+                        }
+                    }
+                } catch (SocketTimeoutException e) {
+                    socket.send(packet);
+                    System.err.println(DEBUG_PREFIX + "Timeout. Resending packet nº " + i);
 
-                if(answerType == Protocol.ACK_TYPE && ackSeq == pacoteSeq) {
-                    sent = 1;
                 }
+            }
+        }
+    }
+
+    private void sendNSeqs(long nSeqs) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate(9);
+
+        bb.put(Protocol.SEQ_TYPE);
+        bb.putLong(nSeqs);
+        DatagramPacket packet = new DatagramPacket(bb.array(), bb.array().length, clientIP, clientPort);
+
+        byte[] ackBuffer = new byte[Protocol.messageSize];
+        DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+        
+        socket.send(packet);
+        
+        boolean ack = false;
+        while(!ack) {
+            try {
+                socket.receive(ackPacket);
+                //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
+                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(2);
+                if(ackBuffer[0] == Protocol.ACK_TYPE && ackSeqs == nSeqs) {
+                    ack = true;
+                }            
+            } catch (SocketTimeoutException e) {
+                socket.send(packet);
             }
         }
     }
