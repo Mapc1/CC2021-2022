@@ -11,7 +11,7 @@ import java.util.List;
 public class Protocol {
     public static Integer messageSize = 1420;
     public static Integer dataByteSize = 2;
-    
+
     public static final byte INFO_TYPE = 1;
     public static final byte FILE_TYPE = 4;
     public static final byte LS_TYPE = 5;
@@ -38,13 +38,6 @@ public class Protocol {
 
         StringBuilder allMetaDataSB = new StringBuilder();
         for (String fileName : pathFiles) {
-/*                StringBuilder directorySB = new StringBuilder();
-            String[] parts = fileName.split("//");
-
-            for (int i = 0; i < parts.length - 1; i++) {
-                directorySB.append(parts[i]).append("/");
-            }
-*/
             allMetaDataSB.append(fileName).append("//");
         }
 
@@ -93,28 +86,9 @@ public class Protocol {
 
         res.add(bb.array());
 
-        // byte[] bytes = bb.array();
-
-        // for (byte b : bytes) {
-        // System.out.format("0x%02X ", b);
-        // }
-        // System.out.println();
         return res;
     }
 
-
-    /*public static List<byte[]> createInfoMessage(String path) throws IOException {
-        List<byte[]> ret = new ArrayList<>();
-
-        List<String> metadata = FilesHandler.readAllFilesName(path);
-
-        for(String fileData : metadata) {
-            ByteBuffer bb = ByteBuffer.wrap(5 + )
-        }
-
-        return ret;
-    }
-*/
     public static byte[] cutByteArray(byte[] oldArray, Integer start, Integer size) {
         byte[] newArray = ByteBuffer.allocate(size).array();
         System.arraycopy(oldArray, start, newArray, 0, size);
@@ -144,14 +118,6 @@ public class Protocol {
             outputStream.write(metaDataBytes);
 
         }
-
-        // String metaData = new String(outputStream.toByteArray());
-        // String[] parts = metaData.split("//");
-
-        // for (String part : parts) {
-        // System.out.println("Metadados: " + part);
-        // }
-
     }
 
     // Tipo 2
@@ -168,7 +134,8 @@ public class Protocol {
         bb.put((byte) 2);
 
         // dois bytes para o tamanho dos dados
-        //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
+        // byte[] metaDataSize =
+        // ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
         bb.putShort((short) metaDataBytes.length);
 
         // adiciona os bytes com os metadados à mensagem
@@ -313,7 +280,7 @@ public class Protocol {
             bb.put((byte) 4);
 
             // bytes com o nº de sequência da mensagem
-            //byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
+            // byte[] numSequences = ByteBuffer.allocate(8).putLong(nSeq).array();
             bb.putLong(nSeq);
 
             bb.putShort((short) data.length);
@@ -372,12 +339,55 @@ public class Protocol {
         return outputStream.toByteArray();
     }
 
+    // Tipo 10
+    // -----------------------
+    // | Tipo | Nº Segmentos |
+    // -----------------------
+    // 1B 2B
+    public static byte[] createStartConnMessage(String path) throws IOException {
+        Integer seqNByteSize = 2;
+        Integer maxMetadataMessage = messageSize - 1 - seqNByteSize - dataByteSize;
+        List<String> pathFiles = FilesHandler.readAllFilesName(path);
+
+        StringBuilder allMetaDataSB = new StringBuilder();
+
+        for (String fileName : pathFiles) {
+            File file = new File(path + fileName);
+            StringBuilder directorySB = new StringBuilder();
+            String[] parts = fileName.split("//");
+
+            for (int i = 0; i < parts.length - 1; i++) {
+                directorySB.append(parts[i]).append("/");
+            }
+
+            allMetaDataSB.append(FilesHandler.createMetaDataString(file)).append("//");
+        }
+
+        String metaDataString = allMetaDataSB.toString();
+
+        byte[] metaDataBytes = metaDataString.getBytes(StandardCharsets.UTF_8);
+        Integer metaDataL = metaDataBytes.length;
+
+        Integer nSeq = 1 + metaDataL / maxMetadataMessage;
+
+        ByteBuffer bb = ByteBuffer.allocate(messageSize);
+
+        // Tipo da mensagem
+        bb.put((byte) 10);
+
+        // Número de sequências
+        //byte[] numSequences = ByteBuffer.allocate(4).putInt(nSeq).array();
+        bb.putInt(nSeq);
+
+        return bb.array();
+    }
+
     // Tipo 20
     // ---------------------------------
     // | Tipo | Tipo Mensagem | Nº Seq |
     // ---------------------------------
-    // 1B  1B  5B
-    public static byte[] createAckMessage(Integer messageType ,Long seqNumber) {
+    // 1B 1B 5B
+    public static byte[] createAckMessage(Integer messageType, Long seqNumber) {
         Integer numSequencesBytes = 5;
         ByteBuffer bb = ByteBuffer.allocate(messageSize);
         // primeiro byte que define o tipo
@@ -404,7 +414,9 @@ public class Protocol {
     }
 
     /**
-     * Devolve um par com o tipo a que a messagem dá ack, e o número de sequência (se necessário).
+     * Devolve um par com o tipo a que a messagem dá ack, e o número de sequência
+     * (se necessário).
+     * 
      * @param message Array de bytes com a mensagem
      * @return Par com o tipo da mensagem e o número de sequência
      */
@@ -412,11 +424,11 @@ public class Protocol {
         Integer numSequencesBytes = 5;
 
         byte[] sequenceBytes = ByteBuffer.allocate(8).array();
-            System.arraycopy(message, 2, sequenceBytes, 8 - numSequencesBytes, numSequencesBytes);
-            ByteBuffer sequenceBB = ByteBuffer.wrap(sequenceBytes);
-            Long nSeq = sequenceBB.getLong();
-        
-        return new Pair<Integer,Long>((int) message[1], nSeq);
+        System.arraycopy(message, 2, sequenceBytes, 8 - numSequencesBytes, numSequencesBytes);
+        ByteBuffer sequenceBB = ByteBuffer.wrap(sequenceBytes);
+        Long nSeq = sequenceBB.getLong();
+
+        return new Pair<Integer, Long>((int) message[1], nSeq);
     }
 
     /**
@@ -428,37 +440,4 @@ public class Protocol {
     public static Integer getMessageType(byte[] message) {
         return (int) message[0];
     }
-
-    public static void main(String[] args) {
-        // List<byte[]> info = createInfoMessage("src/main/java/com/cc/");
-
-        // try {
-        // readInfoMessage(info);
-        // } catch (IOException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-
-        // createTransferInfoMessage("src/main/java/com/cc/Protocol.java");
-        try {
-            String meta = FilesHandler.createMetaDataString(new File("src/main/java/com/cc/Protocol.java"));
-            System.out.println(meta);
-
-            FilesHandler.getSizeFromMetaData(meta);
-
-            byte[] message = createTransferInfoMessage(meta);
-
-            System.out.println(getMessageType(message));
-
-            Pair<Long, String> m = readTransferInfoMessage(message);
-            System.out.println(m.fst());
-            System.out.println(m.snd());
-
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
-
 }

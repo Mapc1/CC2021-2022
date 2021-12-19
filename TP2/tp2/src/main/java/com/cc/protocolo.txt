@@ -3,6 +3,7 @@ Tipos de mensagem
 2 - Pedir transferencia de um ficheiro
 3 - Info do ficheiro que irá enviar
 4 - Transferir ficheiro
+10 - Inicio de conexão
 20 - ack
 44 - erros
 
@@ -34,12 +35,12 @@ Tipo 4
    1B       5B
 
 
+Tipo 10
+-----------------------
+| Tipo | Nº Segmentos |
+-----------------------
+
 Tipo 20
 ---------------------------------
 | Tipo | Tipo Mensagem | Nº Seq | 
 ---------------------------------
-
-SYN
------------------------
-| Tipo | Nº Segmentos |
------------------------
