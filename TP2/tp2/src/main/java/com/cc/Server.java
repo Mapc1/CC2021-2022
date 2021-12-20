@@ -25,7 +25,7 @@ public class Server implements Runnable {
  
                 logger.write("Packet received. Passing it to client handler nº" + requestNum + "...", LogType.GOOD);
 
-                Thread t = new Thread(new ServerHandler(packet, "/Request_" + requestNum));
+                Thread t = new Thread(new ClientHandler(packet, "/Request_" + requestNum));
                 requestNum++;
 
                 t.start();

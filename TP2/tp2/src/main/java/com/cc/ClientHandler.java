@@ -1,197 +1,214 @@
 package com.cc;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.FileTime;
+import java.nio.file.Paths;
+import java.util.List;
 
-public class ClientHandler implements Runnable {
-    private static final int MAX_TRIES = 10;
-
-    DatagramSocket socket;
-    InetAddress serverIP;
-    int serverPort;
+public class ClientHandler implements Runnable { 
     Encryption e;
+    
+    DatagramSocket socket;
+    int clientPort;
+    InetAddress clientIP;
+
     double estimatedRTT = 4000;
     double devRTT = 100;
-    int timeout = 4000;
+    
+    DatagramPacket connectPacket;
+    DatagramPacket requestPacket;
 
     Log logger;
 
-    String metadata;
+    public ClientHandler(DatagramPacket packet, String logFile) throws IOException {
+        this.clientPort = packet.getPort();
+        this.clientIP = packet.getAddress();
 
-    public ClientHandler(String metadata, InetAddress serverIP, int serverPort) throws IOException {
-        this.e = new Encryption(logger);
-        this.serverIP = serverIP;
-        this.serverPort = serverPort;
         this.socket = new DatagramSocket();
         this.socket.setSoTimeout((int) estimatedRTT);
 
-        this.metadata = metadata;
-        String fileName = metadata.split(";")[0];
-        this.logger = new Log(Client.LOG_FOLDER + fileName + ".txt");
-        logger.write("Connection open in: " + serverPort + " ip: " + serverIP.getAddress(), LogType.GOOD);
+        this.requestPacket = packet;
+        this.logger = new Log(Server.LOG_FOLDER + logFile);
+        this.e = new Encryption(logger);
     }
-
+    
     public void run() {
         try {
             //connect();
+/*
+            byte[] reqBuff = new byte[Protocol.messageSize];
+            DatagramPacket requestPacket = new DatagramPacket(reqBuff, reqBuff.length);
 
-            sendGetFile(metadata);
-            getFileData(metadata);
+            boolean requestReceived = false;
+            while(!requestReceived) {
+                try {
+                    socket.receive(requestPacket);
+                    requestReceived = true;
+                } catch (SocketTimeoutException e) {}
+            }
+*/
+            byte[] ackBuff = Protocol.createAckMessage((int) Protocol.LS_TYPE);
+            DatagramPacket ackPacket = new DatagramPacket(ackBuff, ackBuff.length, clientIP, clientPort);
+            socket.send(ackPacket);
+
+            ByteBuffer requestBB = ByteBuffer.wrap(requestPacket.getData());
+            byte requestType = requestBB.get();
+		    
+            switch(requestType) {
+                case Protocol.LS_TYPE : sendMetaData(Peer.SYNC_FOLDER); break;
+                case Protocol.FILE_REQ_TYPE :
+                    short size = requestBB.getShort();
+                    byte[] buf = new byte[size];
+                    System.arraycopy(requestBB.array(), 3, buf, 0, size);
+                    String metadata = new String(buf);
+                    sendFileData(metadata);
+                    break;
+            }
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+        
     }
 
     private void connect() throws IOException {
-        byte[] buffer = new byte[Protocol.messageSize];
+        byte[] inBuffer = new byte[Protocol.messageSize];
+
+        DatagramPacket inPacket = new DatagramPacket(inBuffer, inBuffer.length);
+        
+        byte[] ack = { Protocol.ACK_TYPE };
+        DatagramPacket outPacket = new DatagramPacket(ack, ack.length, clientIP, clientPort);
+        socket.send(outPacket);
+
+        ByteBuffer otherKeyBB = ByteBuffer.wrap(connectPacket.getData());
+        byte type = otherKeyBB.get();
+        short size = otherKeyBB.getShort();
+
+        byte[] otherKeyArr = new byte[size];
+        System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
+
+        /*boolean otherKeyReceived = false;
+        while(!otherKeyReceived) {
+            try {
+                socket.receive(inPacket);
+
+                ByteBuffer otherKeyBB = ByteBuffer.wrap(inPacket.getData());
+                byte type = otherKeyBB.get();
+                if(type == Protocol.KEY_TYPE) {
+                    short size = otherKeyBB.getShort();
+
+                    otherKeyArr = new byte[size];
+                    System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
+                    otherKeyReceived = true;
+
+                    serverPort = inPacket.getPort();
+                    serverIP = inPacket.getAddress();
+
+                    byte[] ack = new byte[1];
+                    ack[0] = Protocol.ACK_TYPE;
+
+                    DatagramPacket outPacket = new DatagramPacket(ack, ack.length, serverIP, serverPort);
+                    socket.send(outPacket);
+                }
+            } catch (SocketTimeoutException e) {
+                System.err.println(DEBUG_PREFIX + "Did not receive anything. Still waiting...");
+            }
+        }
+*/
         byte[] publicKey = e.calcPublicKey();
-        short size = (short) publicKey.length;
+        e.calcSharedKey(otherKeyArr);
 
-        ByteBuffer publicKeyBB = ByteBuffer.allocate(3+size);
-        publicKeyBB.put(Protocol.KEY_TYPE);
-        publicKeyBB.putShort(size);
-        publicKeyBB.put(publicKey);
+        size = (short) publicKey.length;
+        ByteBuffer pubKeyBB = ByteBuffer.allocate(3+size);
+        pubKeyBB.put(Protocol.KEY_TYPE);
+        pubKeyBB.putShort(size);
+        pubKeyBB.put(publicKey);
 
-        DatagramPacket packet = new DatagramPacket(publicKeyBB.array(), publicKeyBB.array().length, serverIP, serverPort);
+        outPacket = new DatagramPacket(pubKeyBB.array(), pubKeyBB.array().length, clientIP, clientPort);
 
         boolean ackReceived = false;
         while(!ackReceived) {
             try {
-                socket.send(packet);
-                logger.write("PubKey sent, awaiting response...", LogType.GOOD);
-
-                socket.receive(packet);
-
-                if(packet.getData()[0] == Protocol.ACK_TYPE) {
-                    ackReceived = true;
-                }
+            socket.send(outPacket);
+            socket.receive(inPacket);
+            
+            if(inPacket.getData()[0] == Protocol.ACK_TYPE) {
+                ackReceived = true;
+            }
             } catch (SocketTimeoutException e) {
-                logger.write("Timeout ocurred. Trying again...", LogType.TIMEOUT);
+                logger.write("Timeout ocurred. Sending ACK again...", LogType.TIMEOUT);
             }
         }
 
-        logger.write("Ack received!", LogType.GOOD);
-        DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-
-        boolean otherKeyReceived = false;
-        while(!otherKeyReceived) {
-            try {
-                socket.receive(response);      
-                logger.write("Packet received. Checking contents...", LogType.GOOD);
-
-                ByteBuffer rBB = ByteBuffer.wrap(response.getData());
-                byte type = rBB.get();
-
-                if(type == Protocol.KEY_TYPE) {
-                    logger.write("Packet type correct. Reading key...", LogType.GOOD);
-                    short rSize = rBB.getShort();
-                    byte[] otherKey = new byte[rSize];
-                    System.arraycopy(rBB.array(), 3, otherKey, 0, rSize);
-
-                    e.calcSharedKey(otherKey);
-                    otherKeyReceived = true;
-
-                    byte[] ack = {Protocol.ACK_TYPE};
-                    packet = new DatagramPacket(ack, ack.length, serverIP, serverPort);
-                    socket.send(packet);
-                } else { 
-                    logger.write("Wrong type packet. Discarding it...", LogType.ERROR);
-                }
-            } catch (SocketTimeoutException e) {
-                logger.write("Did not receive a key. Still waiting...", LogType.TIMEOUT);
-            }
-        }
         logger.write("We're connected! YAY", LogType.GOOD);
     }
 
-    private void sendGetFile(String metaData) throws IOException {
-        byte[] metaBuff = metaData.getBytes();
-        ByteBuffer reqBB = ByteBuffer.allocate(3 + metaBuff.length);
+    private void sendFileData(String metadata) throws IOException {
+        String filePath = Peer.SYNC_FOLDER + "/" + metadata.split(";")[0];
 
-        reqBB.put(Protocol.FILE_REQ_TYPE);
-        reqBB.putShort((short) metaBuff.length);
-        reqBB.put(metaBuff);
+        byte[] listenBuff = new byte[Protocol.messageSize];
 
-        DatagramPacket packet = new DatagramPacket(reqBB.array(), reqBB.array().length, serverIP, serverPort);
-        socket.send(packet);
-
-        byte[] respBuff = new byte[Protocol.messageSize];
-        DatagramPacket response = new DatagramPacket(respBuff, respBuff.length);
-
-        boolean ackReceived = false;
-        while(!ackReceived) {
-            try {
-                socket.receive(response);
-                
-                if(response.getData()[0] == Protocol.ACK_TYPE) {
-                    ackReceived = true;
-                    serverIP = response.getAddress();
-                    serverPort = response.getPort();
-                }
-            } catch (SocketTimeoutException e) {
-                socket.send(packet);
-            }
-        }
-    }
-
-    private void getFileData(String metadata) throws IOException {
-        String[] dados = metadata.split(";");
-        String filePath = Peer.SYNC_FOLDER + "/" + dados[0];
         File f = new File(filePath);
-        FileOutputStream fos = new FileOutputStream(f);
+        FileInputStream fis = new FileInputStream(f);
 
-        f.createNewFile();
-        
-        byte[] buffer = new byte[Protocol.messageSize];
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-        long lastSeq = receiveNSeqs() - 1;
-        long seqNum = 0;
+        long fileSize = Files.size(Paths.get(filePath));
+        long nSeqs = fileSize / (Protocol.messageSize - 11);
+        if((fileSize % (Protocol.messageSize - 11)) != 0) {
+            nSeqs++;
+        }
+        sendNSeqs(nSeqs);
 
         long start = System.currentTimeMillis();
-        for(long i = 0; i <= lastSeq; i++) {
-            boolean received = false;
-            while(!received) {
+
+        long i = 0;
+        while(i < nSeqs) {
+            byte[] pacote = fis.readNBytes(Protocol.messageSize - 11);
+            ByteBuffer pacoteBB = ByteBuffer.allocate(Protocol.messageSize);
+            pacoteBB.put(Protocol.FILE_TYPE);
+            pacoteBB.putLong(i);
+            pacoteBB.putShort((short) pacote.length);
+            pacoteBB.put(pacote);
+
+            DatagramPacket packet = new DatagramPacket(pacoteBB.array(), pacoteBB.array().length, clientIP, clientPort);
+            DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
+
+            socket.send(packet);
+            logger.write("Packet nº " + i + " sent. Awaiting response...", LogType.GOOD);
+
+            boolean sent = false;
+            while(!sent) {
                 try {
-                    socket.receive(packet);
+                    socket.receive(ackPacket);
+                    ByteBuffer bb = ByteBuffer.wrap(ackPacket.getData());
 
-                    ByteBuffer bb = ByteBuffer.wrap(packet.getData());
-                    byte type = bb.get();
+                    byte answerType = bb.get();
+                    long ackSeq = bb.getLong(2);
 
-                    if(type == Protocol.FILE_TYPE) {
-                        sendAck(type, seqNum);
-                        long msgSeq = bb.getLong();
-                        if(msgSeq == seqNum) {
-                            short size = bb.getShort();
-                            byte[] msg = new byte[size];
-                            System.arraycopy(bb.array(), 11, msg, 0, size); 
-                            fos.write(msg);
-                            logger.write("Packet nº " + seqNum + " of " + lastSeq + " received.", LogType.GOOD);
-                            seqNum++;
-                            received = true;
+                    if(answerType == Protocol.ACK_TYPE) {
+                        logger.write("ACK received nº " + ackSeq, LogType.GOOD);
+
+                        sent = true;
+                        if(ackSeq == i) {
+                            i++;
+                        } else {
+                            i = ackSeq + 1;
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    logger.write("Timeout reached. Resending ACK...", LogType.TIMEOUT);
-                    timeout += 1000;
-                    socket.setSoTimeout(timeout);
-                    sendAck(Protocol.FILE_TYPE, seqNum);
+                    socket.send(packet);
+                    logger.write("Timeout. Resending packet nº " + i, LogType.TIMEOUT);
                 }
             }
         }
-        
-        long fileSize = Files.size(f.toPath());
+
         double end = System.currentTimeMillis();
         double secsElapsed = (end - start) / 1000;
         double bitsPerSec = (fileSize * 8) / secsElapsed;
@@ -201,54 +218,79 @@ public class ClientHandler implements Runnable {
         logger.write("File size: " + fileSize + " bytes", LogType.INFO);
         logger.write("Time elapsed: " + secsElapsed + "s", LogType.INFO);
         logger.write("Transfer speed: " + bitsPerSec + " bits/s", LogType.INFO);
-
-        FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(dados[3]));
-        FileTime accessTime = FileTime.fromMillis(Long.parseLong(dados[5]));
-        FileTime createTime = FileTime.fromMillis(Long.parseLong(dados[4]));
-
-        BasicFileAttributeView attr = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
-        attr.setTimes(modifiedTime, accessTime, createTime);
-        fos.close();
+        fis.close();
     }
 
-    private void calculateRTT(long start, long end) throws SocketException {
-        if(start != 0) {
-            long sampleRTT = end - start;
-            estimatedRTT = 0.875 * estimatedRTT + 0.125 * sampleRTT;
-            devRTT = 0.75 * devRTT + 0.25 * Math.abs(sampleRTT - estimatedRTT);
+    private void sendMetaData(String path) throws IOException {
+        List<byte[]> pacotes = Protocol.createInfoMessage(path);
+        byte[] listenBuff = new byte[Protocol.messageSize];
 
-            timeout = (int) (estimatedRTT + 4 * devRTT);
-            socket.setSoTimeout(timeout);
-        }
-    }
+        long nSeqs = pacotes.size();
+        sendNSeqs(nSeqs);
 
-    private void sendAck(byte type, long seqNum) throws IOException {
-        byte[] buffer = Protocol.createAckMessage((int) type, seqNum);
-        //byte[] encrypted = e.encrypt(buffer, buffer.length);
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
+        long i = 0;
+        nSeqs--;
+        while(i <= nSeqs) {
+            byte[] pacote = pacotes.get((int) i);
+            //byte[] encrypted = e.encrypt(pacote, pacote.length);
+            DatagramPacket packet = new DatagramPacket(pacote, pacote.length, clientIP, clientPort);
+            DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
+            
+            socket.send(packet);
+            logger.write("Packet nº " + i + " sent, Awaiting response...", LogType.GOOD);
 
-        socket.send(packet);
-    }
+            boolean sent = false;
+            while(!sent) {
+                try {
+                    socket.receive(ackPacket);
+                    //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
+                    ByteBuffer data = ByteBuffer.wrap(ackPacket.getData());
 
-    private long receiveNSeqs() throws IOException {
-        byte[] buffer = new byte[Protocol.messageSize];
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-        long nSeqs = 0;
+                    byte answerType = data.get();
+                    long ackSeq = data.getLong(2);
 
-        boolean received = false;
-        while(!received) {
-            try {
-                socket.receive(packet);
+                    if(answerType == Protocol.ACK_TYPE) {
+                        logger.write("ACK received nº " + ackSeq, LogType.GOOD);
+                        sent = true;
 
-                if(buffer[0] == Protocol.SEQ_TYPE) {
-                    nSeqs = ByteBuffer.wrap(buffer).getLong(1);
-                    sendAck(Protocol.SEQ_TYPE, nSeqs);
-                    received = true;
+                        if(ackSeq == i) {
+                            i++;
+                        } else {
+                            i = ackSeq + 1;
+                        }
+                    }
+                } catch (SocketTimeoutException e) {
+                    socket.send(packet);
+                    logger.write("Timeout. Resending packet nº " + i, LogType.TIMEOUT);
                 }
-            } catch (SocketTimeoutException e) {
-                logger.write("Timeout. Still waiting...", LogType.TIMEOUT);
             }
         }
-        return nSeqs;
+    }
+
+    private void sendNSeqs(long nSeqs) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate(9);
+
+        bb.put(Protocol.SEQ_TYPE);
+        bb.putLong(nSeqs);
+        DatagramPacket packet = new DatagramPacket(bb.array(), bb.array().length, clientIP, clientPort);
+
+        byte[] ackBuffer = new byte[Protocol.messageSize];
+        DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+        
+        socket.send(packet);
+        
+        boolean ack = false;
+        while(!ack) {
+            try {
+                socket.receive(ackPacket);
+                //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
+                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(2);
+                if(ackBuffer[0] == Protocol.ACK_TYPE && ackSeqs == nSeqs) {
+                    ack = true;
+                }            
+            } catch (SocketTimeoutException e) {
+                socket.send(packet);
+            }
+        }
     }
 }

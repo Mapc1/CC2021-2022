@@ -47,7 +47,7 @@ public class Client implements Runnable {
                 //connect();
                 System.out.println("Getting the other machine's file list...");
                 sendLS();
-                
+
                 String theirMetaData = getMetaData();
                 String ourMetaData = String.join("//", FilesHandler.readAllFilesName(Peer.SYNC_FOLDER));
                 
@@ -60,7 +60,7 @@ public class Client implements Runnable {
                     String fileName = file.split(";")[0];
                     System.out.println("Requesting file: " + fileName);
 
-                    Thread t = new Thread(new ClientHandler(file, serverIP, serverPort));
+                    Thread t = new Thread(new FileRequester(file, serverIP, serverPort));
                     threads.add(t);
                     t.start();
                 }
