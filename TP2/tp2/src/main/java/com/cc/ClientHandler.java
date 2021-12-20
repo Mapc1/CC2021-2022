@@ -8,14 +8,12 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 
 public class ClientHandler implements Runnable {
-    private static final String DEBUG_PREFIX = "Client: ";
     private static final int MAX_TRIES = 10;
 
     DatagramSocket socket;
@@ -26,28 +24,29 @@ public class ClientHandler implements Runnable {
     double devRTT = 100;
     int timeout = 4000;
 
-    String metadata;
-    String syncFolder;
+    Log logger;
 
-    public ClientHandler(String metadata, String syncFolder, InetAddress serverIP, int serverPort) throws UnknownHostException, SocketException {
-        this.syncFolder = syncFolder;
-        this.e = new Encryption(DEBUG_PREFIX);
+    String metadata;
+
+    public ClientHandler(String metadata, InetAddress serverIP, int serverPort) throws IOException {
+        this.e = new Encryption(logger);
         this.serverIP = serverIP;
         this.serverPort = serverPort;
         this.socket = new DatagramSocket();
         this.socket.setSoTimeout((int) estimatedRTT);
-        //System.out.println(DEBUG_PREFIX + "Connection open in: " + serverPort + "ip: " + serverIP.getAddress());
 
         this.metadata = metadata;
+        String fileName = metadata.split(";")[0];
+        this.logger = new Log(Client.LOG_FOLDER + fileName + ".txt");
+        logger.write("Connection open in: " + serverPort + " ip: " + serverIP.getAddress(), LogType.GOOD);
     }
 
     public void run() {
         try {
             //connect();
-            sendGetFile(metadata);
 
+            sendGetFile(metadata);
             getFileData(metadata);
-            //getFileData("/home/marco/Vídeos/yay.mp4;;false;242;1639340391784;1639343775285;1639340391784");       
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -70,7 +69,7 @@ public class ClientHandler implements Runnable {
         while(!ackReceived) {
             try {
                 socket.send(packet);
-                System.out.println(DEBUG_PREFIX + "PubKey sent, awaiting response...");
+                logger.write("PubKey sent, awaiting response...", LogType.GOOD);
 
                 socket.receive(packet);
 
@@ -78,24 +77,24 @@ public class ClientHandler implements Runnable {
                     ackReceived = true;
                 }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Timeout ocurred. Trying again...");
+                logger.write("Timeout ocurred. Trying again...", LogType.TIMEOUT);
             }
         }
 
-        System.out.println(DEBUG_PREFIX + "Ack received!");
+        logger.write("Ack received!", LogType.GOOD);
         DatagramPacket response = new DatagramPacket(buffer, buffer.length);
 
         boolean otherKeyReceived = false;
         while(!otherKeyReceived) {
             try {
                 socket.receive(response);      
-                System.out.println(DEBUG_PREFIX + "Packet received. Checking contents...");
+                logger.write("Packet received. Checking contents...", LogType.GOOD);
 
                 ByteBuffer rBB = ByteBuffer.wrap(response.getData());
                 byte type = rBB.get();
 
                 if(type == Protocol.KEY_TYPE) {
-                    System.out.println(DEBUG_PREFIX + "Packet type correct. Reading key...");
+                    logger.write("Packet type correct. Reading key...", LogType.GOOD);
                     short rSize = rBB.getShort();
                     byte[] otherKey = new byte[rSize];
                     System.arraycopy(rBB.array(), 3, otherKey, 0, rSize);
@@ -106,12 +105,14 @@ public class ClientHandler implements Runnable {
                     byte[] ack = {Protocol.ACK_TYPE};
                     packet = new DatagramPacket(ack, ack.length, serverIP, serverPort);
                     socket.send(packet);
-                } else { System.err.println(DEBUG_PREFIX + "Wrong type packet. Discarding it..."); }
+                } else { 
+                    logger.write("Wrong type packet. Discarding it...", LogType.ERROR);
+                }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Did not receive a key. Still waiting...");
+                logger.write("Did not receive a key. Still waiting...", LogType.TIMEOUT);
             }
         }
-        System.out.println(DEBUG_PREFIX + "We're connected! YAY");
+        logger.write("We're connected! YAY", LogType.GOOD);
     }
 
     private void sendGetFile(String metaData) throws IOException {
@@ -146,7 +147,7 @@ public class ClientHandler implements Runnable {
 
     private void getFileData(String metadata) throws IOException {
         String[] dados = metadata.split(";");
-        String filePath = syncFolder + "/" + dados[0];
+        String filePath = Peer.SYNC_FOLDER + "/" + dados[0];
         File f = new File(filePath);
         FileOutputStream fos = new FileOutputStream(f);
 
@@ -155,43 +156,52 @@ public class ClientHandler implements Runnable {
         byte[] buffer = new byte[Protocol.messageSize];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-        long nSeqs = receiveNSeqs();
+        long lastSeq = receiveNSeqs() - 1;
         long seqNum = 0;
 
-        long start = 0;
-        for(long i = 0; i < nSeqs; i++) {
+        long start = System.currentTimeMillis();
+        for(long i = 0; i <= lastSeq; i++) {
             boolean received = false;
             while(!received) {
                 try {
                     socket.receive(packet);
-                    long end = System.currentTimeMillis();
-                    //calculateRTT(start, end);
 
                     ByteBuffer bb = ByteBuffer.wrap(packet.getData());
                     byte type = bb.get();
 
                     if(type == Protocol.FILE_TYPE) {
                         sendAck(type, seqNum);
-                        start = System.currentTimeMillis();
                         long msgSeq = bb.getLong();
                         if(msgSeq == seqNum) {
                             short size = bb.getShort();
                             byte[] msg = new byte[size];
                             System.arraycopy(bb.array(), 11, msg, 0, size); 
                             fos.write(msg);
-                            System.out.println(DEBUG_PREFIX + "Packet nº " + seqNum + " of " + nSeqs + " received.");
+                            logger.write("Packet nº " + seqNum + " of " + lastSeq + " received.", LogType.GOOD);
                             seqNum++;
                             received = true;
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    System.err.println(DEBUG_PREFIX + "Timeout reached. Resending ACK...");
+                    logger.write("Timeout reached. Resending ACK...", LogType.TIMEOUT);
                     timeout += 1000;
                     socket.setSoTimeout(timeout);
                     sendAck(Protocol.FILE_TYPE, seqNum);
                 }
             }
         }
+        
+        long fileSize = Files.size(f.toPath());
+        double end = System.currentTimeMillis();
+        double secsElapsed = (end - start) / 1000;
+        double bitsPerSec = (fileSize * 8) / secsElapsed;
+
+        logger.newLine();
+        logger.write("Transfer complete! Here are some stats... :)", LogType.GOOD);
+        logger.write("File size: " + fileSize + " bytes", LogType.INFO);
+        logger.write("Time elapsed: " + secsElapsed + "s", LogType.INFO);
+        logger.write("Transfer speed: " + bitsPerSec + " bits/s", LogType.INFO);
+
         FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(dados[3]));
         FileTime accessTime = FileTime.fromMillis(Long.parseLong(dados[5]));
         FileTime createTime = FileTime.fromMillis(Long.parseLong(dados[4]));
@@ -212,8 +222,8 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void sendAck(byte type, long nSeqs) throws IOException {
-        byte[] buffer = Protocol.createAckMessage((int) type, nSeqs);
+    private void sendAck(byte type, long seqNum) throws IOException {
+        byte[] buffer = Protocol.createAckMessage((int) type, seqNum);
         //byte[] encrypted = e.encrypt(buffer, buffer.length);
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
 
@@ -236,7 +246,7 @@ public class ClientHandler implements Runnable {
                     received = true;
                 }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Timeout. Still waiting");
+                logger.write("Timeout. Still waiting...", LogType.TIMEOUT);
             }
         }
         return nSeqs;

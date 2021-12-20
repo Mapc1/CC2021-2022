@@ -1,11 +1,9 @@
 package com.cc;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -13,54 +11,72 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Client implements Runnable {
-    private String syncFolder;
+    public static final String LOG_FOLDER = Peer.LOG_FOLDER + "/Client";
+    private static final String LOG_FILE = "/ClientLog.txt";
+
     private int serverPort;
     private InetAddress serverIP;
     private int clientHandlerPort;
     private InetAddress clientHandlerIP;
     private DatagramSocket socket;
-    private Encryption e = new Encryption(DEBUG_PREFIX);
+    private Log logger;
+    private Encryption e;
+    
+    private int timeout = 4000;
 
-    private static final String DEBUG_PREFIX = "RealClient: ";
-
-    public Client(String syncFolder, int serverPort, InetAddress serverIP) throws SocketException {
-        this.syncFolder = syncFolder;
+    public Client(int serverPort, InetAddress serverIP) throws IOException {
         this.serverPort = serverPort;
         this.serverIP = serverIP;
-        socket = new DatagramSocket();
+        this.socket = new DatagramSocket();
+        this.socket.setSoTimeout(timeout);
+        this.logger = new Log(LOG_FOLDER + LOG_FILE);
+        this.e = new Encryption(logger);
     }
 
     @Override
     public void run() {
         try {
             List<Thread> threads = new ArrayList<>();
-            //while(true) {
+            while(true) {
                 //connect();
+                System.out.println("Getting the other machine's file list...");
                 sendLS();
-                String theirMetaData = getMetaData();
-
-                String ourMetaData = String.join("//", FilesHandler.readAllFilesName(syncFolder));
                 
-                List<String> files;
-                if(!ourMetaData.equals("")) {
-                    files = cmpFolders(ourMetaData, theirMetaData);
-                } else {
-                    files = new ArrayList<String>(Arrays.asList(theirMetaData.split("//")));
-                }
+                String theirMetaData = getMetaData();
+                String ourMetaData = String.join("//", FilesHandler.readAllFilesName(Peer.SYNC_FOLDER));
+                
+                System.out.println("Comparing folders...");
+                List<String> files = cmpFolders(ourMetaData, theirMetaData);
 
                 files = createFolders(files);
 
                 for(String file : files) {
-                    Thread t = new Thread(new ClientHandler(file, syncFolder, serverIP, serverPort));
+                    String fileName = file.split(";")[0];
+                    System.out.println("Requesting file: " + fileName);
+
+                    Thread t = new Thread(new ClientHandler(file, serverIP, serverPort));
                     threads.add(t);
                     t.start();
                 }
-        } catch (IOException e) {
+                
+                for(Thread t : threads) {
+                    t.join();
+                }
+
+                threads = new ArrayList<>();
+
+                System.out.println("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^");
+                logger.write("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^", LogType.GOOD);
+                logger.newLine();
+                Thread.sleep(10000);
+            }
+        } catch (IOException | InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -68,12 +84,13 @@ public class Client implements Runnable {
     }
 
     private List<String> createFolders(List<String> metadata) throws IOException {
-        for(int i = 0; i < metadata.size(); i++) {
+        int i = 0;
+        while(i < metadata.size()) {
             String file = metadata.get(i);
 
             String[] tokens = file.split(";");
             if(tokens[1].equals("true")) {
-                Path path = Paths.get(syncFolder + tokens[0]);
+                Path path = Paths.get(Peer.SYNC_FOLDER + tokens[0]);
                 Files.createDirectories(path);
                 
                 FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(tokens[3]));
@@ -84,6 +101,8 @@ public class Client implements Runnable {
                 attr.setTimes(modifiedTime, accessTime, createTime);
 
                 metadata.remove(i);
+            } else { 
+                i++;
             }
         }
 
@@ -106,7 +125,7 @@ public class Client implements Runnable {
         while(!ackReceived) {
             try {
                 socket.send(packet);
-                System.out.println(DEBUG_PREFIX + "PubKey sent, awaiting response...");
+                logger.write("PubKey sent. Awaiting response...", LogType.GOOD);
 
                 socket.receive(packet);
 
@@ -116,24 +135,25 @@ public class Client implements Runnable {
                     this.clientHandlerPort = packet.getPort();
                 }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Timeout ocurred. Trying again...");
+                logger.write("Timeout ocurred. Trying again...", LogType.TIMEOUT);
             }
         }
 
-        System.out.println(DEBUG_PREFIX + "Ack received!");
+        logger.write("Ack received!", LogType.GOOD);
+
         DatagramPacket response = new DatagramPacket(buffer, buffer.length);
 
         boolean otherKeyReceived = false;
         while(!otherKeyReceived) {
             try {
                 socket.receive(response);      
-                System.out.println(DEBUG_PREFIX + "Packet received. Checking contents...");
+                logger.write("Packet received. Checking contents...", LogType.GOOD);
 
                 ByteBuffer rBB = ByteBuffer.wrap(response.getData());
                 byte type = rBB.get();
 
                 if(type == Protocol.KEY_TYPE) {
-                    System.out.println(DEBUG_PREFIX + "Packet type correct. Reading key...");
+                    logger.write("Packet type correct. Reading key...", LogType.GOOD);
                     short rSize = rBB.getShort();
                     byte[] otherKey = new byte[rSize];
                     System.arraycopy(rBB.array(), 3, otherKey, 0, rSize);
@@ -144,59 +164,65 @@ public class Client implements Runnable {
                     byte[] ack = {Protocol.ACK_TYPE};
                     packet = new DatagramPacket(ack, ack.length, serverIP, serverPort);
                     socket.send(packet);
-                } else { System.err.println(DEBUG_PREFIX + "Wrong type packet. Discarding it..."); }
+                } else { 
+                    logger.write("Wrong type packet. Discarding it...", LogType.ERROR);
+                }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Did not receive a key. Still waiting...");
+                logger.write("Did not receive a key. Still waiting...", LogType.TIMEOUT);
             }
         }
-        System.out.println(DEBUG_PREFIX + "We're connected! YAY");
+        logger.write("We're connected! YAY", LogType.GOOD);
     }
 
 
-    private List<String> cmpFolders(String ourMetadata, String theirMetadata) {
+    private List<String> cmpFolders(String ourMetadata, String theirMetadata) throws IOException {
         String[] ourFiles = ourMetadata.split("//");
         String[] theirFiles = theirMetadata.split("//");
 
-        List<String> ret = new ArrayList<>();
-
-        List<String[]> ourSplitMetaData = new ArrayList<>();
+        logger.write("Comparing folders...", LogType.INFO);
+        logger.write("Our folder:", LogType.INFO);
         for(String file : ourFiles) {
-            String[] info = file.split(";");
-            ourSplitMetaData.add(info);
+            logger.write("      " + file, LogType.EMPTY);
         }
-
-        List<String[]> theirSplitMetaData = new ArrayList<>();
+        logger.write("Their folder:", LogType.INFO);
         for(String file : theirFiles) {
-            String[] info = file.split(";");
-            theirSplitMetaData.add(info);
+            logger.write("      " + file, LogType.EMPTY);
         }
+
+        List<String> ret = new ArrayList<>();
+        if(theirMetadata.equals("")) {
+            return ret;
+        } else if(!ourMetadata.equals("")) {    
+            List<String[]> ourSplitMetaData = new ArrayList<>();
+            for(String file : ourFiles) {
+                String[] info = file.split(";");
+                ourSplitMetaData.add(info);
+            }
+
+            List<String[]> theirSplitMetaData = new ArrayList<>();
+            for(String file : theirFiles) {
+                String[] info = file.split(";");
+                theirSplitMetaData.add(info);
+            }
         
-        for(String[] file : ourSplitMetaData) {
-            String fileName = file[0];
-            String[] theirFile = findFile(fileName, theirSplitMetaData);
+            for(String[] file : ourSplitMetaData) {
+                String fileName = file[0];
+                String[] theirFile = findFile(fileName, theirSplitMetaData);
 
-            /*boolean found = false;
-            String theirFile = null;
-            for(int i = 0; i < theirSplitMetaData.size() && !found; i++) {
-                if(fileName.equals(theirSplitMetaData.get(i)[0])) {
-                    theirFile = theirFiles[i];
-                    found = true;
+                if(theirFile != null) {
+                    long ourLastModifiedTime = Long.parseLong(file[3]);
+                    long theirLastModifiedTime = Long.parseLong(theirFile[3]);
+
+                    if(theirLastModifiedTime <= ourLastModifiedTime) {
+                        theirSplitMetaData.remove(theirFile);
+                    }
                 }
             }
-*/
-            if(theirFile != null) {
-                long ourLastModifiedTime = Long.parseLong(file[3]);
-                long theirLastModifiedTime = Long.parseLong(theirFile[3]);
-
-                if(theirLastModifiedTime <= ourLastModifiedTime) {
-                    theirSplitMetaData.remove(theirFile);
-                }
-
+            for(String[] file: theirSplitMetaData) {
+                ret.add(String.join(";", file));
             }
-        }
-
-        for(String[] file: theirSplitMetaData) {
-            ret.add(String.join(";", file));
+        } else {
+            ret = new ArrayList<>(Arrays.asList(theirFiles));
         }
 
         return ret;
@@ -215,6 +241,8 @@ public class Client implements Runnable {
     }
 
     private void sendLS() throws IOException {
+        logger.write("Sending LS request...", LogType.GOOD);
+        
         byte[] buffer = {Protocol.LS_TYPE};
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
         socket.send(packet);
@@ -227,11 +255,13 @@ public class Client implements Runnable {
             try {
                 socket.receive(response);
                 if(response.getData()[0] == Protocol.ACK_TYPE) {
+                    logger.write("ACK received. Cool...", LogType.GOOD);
                     ackReceived = true;
                     clientHandlerIP = response.getAddress();
                     clientHandlerPort = response.getPort();
                 }
             } catch (SocketTimeoutException s) {
+                logger.write("Timeout... :/", LogType.TIMEOUT);
                 socket.send(packet);
             }
         }
@@ -246,14 +276,12 @@ public class Client implements Runnable {
         long nSeqs = receiveNSeqs();
         short seqNum = 0;
 
-        long start = 0;
         for(int i = 0; i < nSeqs; i++) {
             boolean received = false;
             while(!received) {
                 try {
                     socket.receive(recvPacket);
                     //byte[] decrypted = e.decrypt(recvPacket.getData(), recvPacket.getData().length);
-                    long end = System.currentTimeMillis();
                     //calculateRTT(start, end);
 
                     ByteBuffer bb = ByteBuffer.wrap(recvPacket.getData());
@@ -261,20 +289,19 @@ public class Client implements Runnable {
 
                     if(type == Protocol.INFO_TYPE) {
                         sendAck(Protocol.INFO_TYPE, seqNum);
-                        start = System.currentTimeMillis();
                         short msgSeq = bb.getShort();
                         if(msgSeq == seqNum) {
                             short size = bb.getShort(); 
                             byte[] msg = new byte[size];
                             System.arraycopy(bb.array(), 5, msg, 0, size);
                             dados.add(msg);
-                            System.out.println(DEBUG_PREFIX + "Packet nº " + seqNum + " received");
+                            logger.write("Packet nº " + seqNum + " received", LogType.GOOD);
                             seqNum++;
                             received = true;
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    System.err.println(DEBUG_PREFIX + "Timeout wtf");
+                    logger.write("Timeout WTF", LogType.TIMEOUT);
                     sendAck(Protocol.INFO_TYPE, seqNum);
                 }
             }
@@ -292,8 +319,9 @@ public class Client implements Runnable {
             pos += chunk.length;
         }
 
+        logger.write("Metadata received!", LogType.GOOD);
+
         String s = new String(metadata);
-        System.out.println(s);
         return s;
     }
 
@@ -311,9 +339,10 @@ public class Client implements Runnable {
                     nSeqs = ByteBuffer.wrap(buffer).getLong(1);
                     sendAck(Protocol.SEQ_TYPE, nSeqs);
                     received = true;
+                    logger.write("Received number of sequences. They are " + nSeqs + " packets.", LogType.GOOD);
                 }
             } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Timeout. Still waiting");
+                logger.write("Timeout. Still waiting", LogType.TIMEOUT);
             }
         }
         return nSeqs;

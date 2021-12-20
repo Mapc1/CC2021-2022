@@ -6,17 +6,21 @@ import java.net.SocketException;
 
 public class Peer 
 {
+    //public static final String LOG_FOLDER = System.getProperty("user.home") + "/logs";
+    public static final String LOG_FOLDER =  "logs";
+    public static String SYNC_FOLDER;
     public static void main( String[] args ) throws IOException {
         Thread server;
         Thread client;
 
-        InetAddress ip = InetAddress.getByName(args[3]);
+        Peer.SYNC_FOLDER = args[0];
         int listenPort = Integer.parseInt(args[1]);
         int sendPort = Integer.parseInt(args[2]);
+        InetAddress ip = InetAddress.getByName(args[3]);
 
         try {
-            server = new Thread(new Server(args[0], listenPort));
-            client = new Thread(new Client(args[0], sendPort, ip));
+            server = new Thread(new Server(listenPort));
+            client = new Thread(new Client(sendPort, ip));
             client.start();
             server.start();
 
