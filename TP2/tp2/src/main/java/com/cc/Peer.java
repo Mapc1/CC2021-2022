@@ -3,6 +3,8 @@ package com.cc;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Peer 
 {
@@ -18,14 +20,26 @@ public class Peer
         int sendPort = Integer.parseInt(args[2]);
         InetAddress ip = InetAddress.getByName(args[3]);
 
+        List<Thread> threads = new ArrayList<>();
+
         try {
             server = new Thread(new Server(listenPort));
-            client = new Thread(new Client(sendPort, ip));
-            client.start();
+            //client = new Thread(new Client(sendPort, ip));
+            //client.start();
             server.start();
 
+            for(int i = 2; i < args.length; i+=2) {
+                InetAddress ip1 = InetAddress.getByName(args[i+1]);
+                int porta = Integer.parseInt(args[i]);
+                Thread t = new Thread(new Client(porta, ip1));
+                t.start();
+                threads.add(t);
+            }
+
+            for(Thread t : threads) {
+                t.join();
+            }
             server.join();
-            client.join();
         } catch (NumberFormatException | SocketException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
