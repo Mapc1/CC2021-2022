@@ -8,30 +8,30 @@ import java.util.List;
 
 public class Peer 
 {
-    //public static final String LOG_FOLDER = System.getProperty("user.home") + "/logs";
-    public static final String LOG_FOLDER =  "logs";
+    public static final String LOG_FOLDER = System.getProperty("user.home") + "/logs";
+    //public static final String LOG_FOLDER =  "logs";
     public static String SYNC_FOLDER;
+
+    public static ListWrapper LW  = new ListWrapper();
+
     public static void main( String[] args ) throws IOException {
         Thread server;
-        Thread client;
+        //Thread client;
 
         Peer.SYNC_FOLDER = args[0];
-        int listenPort = Integer.parseInt(args[1]);
-        int sendPort = Integer.parseInt(args[2]);
-        InetAddress ip = InetAddress.getByName(args[3]);
-
+//        InetAddress ip = InetAddress.getByName(args[1]);
         List<Thread> threads = new ArrayList<>();
 
         try {
-            server = new Thread(new Server(listenPort));
-            //client = new Thread(new Client(sendPort, ip));
-            //client.start();
+            server = new Thread(new Server());
+            //client = new Thread(new Client(ip));
+
+//            client.start();
             server.start();
 
-            for(int i = 2; i < args.length; i+=2) {
-                InetAddress ip1 = InetAddress.getByName(args[i+1]);
-                int porta = Integer.parseInt(args[i]);
-                Thread t = new Thread(new Client(porta, ip1));
+            for(int i = 1; i < args.length; i++) {
+                InetAddress ip = InetAddress.getByName(args[i]);
+                Thread t = new Thread(new Client(ip));
                 t.start();
                 threads.add(t);
             }
@@ -39,6 +39,9 @@ public class Peer
             for(Thread t : threads) {
                 t.join();
             }
+            threads = new ArrayList<>();
+
+//            client.join();
             server.join();
         } catch (NumberFormatException | SocketException e) {
             e.printStackTrace();

@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -14,26 +13,24 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 
 public class FileRequester implements Runnable {
-    private static final int MAX_TRIES = 10;
-
     DatagramSocket socket;
     InetAddress serverIP;
-    int serverPort;
+    int serverPort = Server.PORT;
     Encryption e;
-    double estimatedRTT = 4000;
-    double devRTT = 100;
-    int timeout = 4000;
+    double estimatedRTT = 500;
+    double devRTT = 50;
+    int timeout = 500;
 
     Log logger;
 
     String metadata;
 
-    public FileRequester(String metadata, InetAddress serverIP, int serverPort) throws IOException {
+    public FileRequester(String metadata, InetAddress serverIP) throws IOException {
         this.e = new Encryption(logger);
-        this.serverIP = serverIP;
-        this.serverPort = serverPort;
         this.socket = new DatagramSocket();
-        this.socket.setSoTimeout((int) estimatedRTT);
+        this.socket.setSoTimeout(timeout);
+
+        this.serverIP = serverIP;
 
         this.metadata = metadata;
         String fileName = metadata.split(";")[0];
@@ -52,7 +49,7 @@ public class FileRequester implements Runnable {
 			e.printStackTrace();
 		}
     }
-
+/*
     private void connect() throws IOException {
         byte[] buffer = new byte[Protocol.messageSize];
         byte[] publicKey = e.calcPublicKey();
@@ -114,7 +111,7 @@ public class FileRequester implements Runnable {
         }
         logger.write("We're connected! YAY", LogType.GOOD);
     }
-
+*/
     private void sendGetFile(String metaData) throws IOException {
         byte[] metaBuff = metaData.getBytes();
         ByteBuffer reqBB = ByteBuffer.allocate(3 + metaBuff.length);
@@ -122,6 +119,8 @@ public class FileRequester implements Runnable {
         reqBB.put(Protocol.FILE_REQ_TYPE);
         reqBB.putShort((short) metaBuff.length);
         reqBB.put(metaBuff);
+
+        logger.write("Sending file request...", LogType.GOOD);
 
         DatagramPacket packet = new DatagramPacket(reqBB.array(), reqBB.array().length, serverIP, serverPort);
         socket.send(packet);
@@ -138,6 +137,9 @@ public class FileRequester implements Runnable {
                     ackReceived = true;
                     serverIP = response.getAddress();
                     serverPort = response.getPort();
+                    logger.write("ACK received starting file transfer...", LogType.GOOD);
+                } else {
+                    socket.send(packet);
                 }
             } catch (SocketTimeoutException e) {
                 socket.send(packet);
@@ -151,42 +153,64 @@ public class FileRequester implements Runnable {
         File f = new File(filePath);
         FileOutputStream fos = new FileOutputStream(f);
 
-        f.createNewFile();
+        Peer.LW.add(dados[0]);
+
+        /* Setting all times to 0 so that in case of an error the other machine does not
+         * try to fetch these broken files
+        */
+         FileTime modifiedTime = FileTime.fromMillis(0);
+        FileTime accessTime = FileTime.fromMillis(0);
+        FileTime createTime = FileTime.fromMillis(0);
+
+        BasicFileAttributeView attr = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
         
+        f.createNewFile();
+        attr.setTimes(modifiedTime, accessTime, createTime);
+
         byte[] buffer = new byte[Protocol.messageSize];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-        long lastSeq = receiveNSeqs() - 1;
+        long nSeqs = receiveNSeqs();
         long seqNum = 0;
 
         long start = System.currentTimeMillis();
-        for(long i = 0; i <= lastSeq; i++) {
+        long startRTT = 0;
+        for(long i = 0; i < nSeqs; i++) {
             boolean received = false;
             while(!received) {
                 try {
                     socket.receive(packet);
+                    long endRTT = System.currentTimeMillis();
+                    timeout = Protocol.calculateRTT(startRTT, endRTT, estimatedRTT, devRTT);
+                    socket.setSoTimeout(timeout);
 
                     ByteBuffer bb = ByteBuffer.wrap(packet.getData());
                     byte type = bb.get();
 
-                    if(type == Protocol.FILE_TYPE) {
-                        sendAck(type, seqNum);
-                        long msgSeq = bb.getLong();
-                        if(msgSeq == seqNum) {
+                    long msgSeq = bb.getLong();
+                    if(type == Protocol.FILE_TYPE && msgSeq == seqNum) {
+                            sendAck(type, seqNum);
+                            startRTT = System.currentTimeMillis();
                             short size = bb.getShort();
                             byte[] msg = new byte[size];
                             System.arraycopy(bb.array(), 11, msg, 0, size); 
                             fos.write(msg);
-                            logger.write("Packet nº " + seqNum + " of " + lastSeq + " received.", LogType.GOOD);
+                            logger.write("Packet nº " + seqNum + " of " + nSeqs + " received.", LogType.GOOD);
                             seqNum++;
                             received = true;
+                    } else {
+                        logger.write("Wrong packet received: Nº " + msgSeq + ", Type: " + type + " Resending ACK...", LogType.ERROR);
+                        if(type == Protocol.SEQ_TYPE) {
+                            sendAck(Protocol.SEQ_TYPE, nSeqs);
+                        } else {
+                            sendAck(Protocol.FILE_TYPE, seqNum - 1);
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    logger.write("Timeout reached. Resending ACK...", LogType.TIMEOUT);
-                    timeout += 1000;
+                    logger.write("Timeout reached. Resending ACK nº" + (seqNum - 1) + "...", LogType.TIMEOUT);
+                    timeout += 50;
                     socket.setSoTimeout(timeout);
-                    sendAck(Protocol.FILE_TYPE, seqNum);
+                    sendAck(Protocol.FILE_TYPE, seqNum - 1);
                 }
             }
         }
@@ -196,30 +220,22 @@ public class FileRequester implements Runnable {
         double secsElapsed = (end - start) / 1000;
         double bitsPerSec = (fileSize * 8) / secsElapsed;
 
+        System.out.println("File " + dados[0] + " received!");
+
         logger.newLine();
         logger.write("Transfer complete! Here are some stats... :)", LogType.GOOD);
         logger.write("File size: " + fileSize + " bytes", LogType.INFO);
         logger.write("Time elapsed: " + secsElapsed + "s", LogType.INFO);
         logger.write("Transfer speed: " + bitsPerSec + " bits/s", LogType.INFO);
 
-        FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(dados[3]));
-        FileTime accessTime = FileTime.fromMillis(Long.parseLong(dados[5]));
-        FileTime createTime = FileTime.fromMillis(Long.parseLong(dados[4]));
+        modifiedTime = FileTime.fromMillis(Long.parseLong(dados[3]));
+        accessTime = FileTime.fromMillis(Long.parseLong(dados[5]));
+        createTime = FileTime.fromMillis(Long.parseLong(dados[4]));
 
-        BasicFileAttributeView attr = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
         attr.setTimes(modifiedTime, accessTime, createTime);
         fos.close();
-    }
 
-    private void calculateRTT(long start, long end) throws SocketException {
-        if(start != 0) {
-            long sampleRTT = end - start;
-            estimatedRTT = 0.875 * estimatedRTT + 0.125 * sampleRTT;
-            devRTT = 0.75 * devRTT + 0.25 * Math.abs(sampleRTT - estimatedRTT);
-
-            timeout = (int) (estimatedRTT + 4 * devRTT);
-            socket.setSoTimeout(timeout);
-        }
+        Peer.LW.remove(dados[0]);
     }
 
     private void sendAck(byte type, long seqNum) throws IOException {
@@ -244,6 +260,7 @@ public class FileRequester implements Runnable {
                     nSeqs = ByteBuffer.wrap(buffer).getLong(1);
                     sendAck(Protocol.SEQ_TYPE, nSeqs);
                     received = true;
+                    logger.write("Received number of sequences. They are " + nSeqs + " packets.", LogType.GOOD);
                 }
             } catch (SocketTimeoutException e) {
                 logger.write("Timeout. Still waiting...", LogType.TIMEOUT);

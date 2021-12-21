@@ -5,20 +5,24 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
 public class Server implements Runnable {
+    public static final int PORT = 80;
     public static final String LOG_FOLDER = Peer.LOG_FOLDER + "/Server";
     private static final String LOG_FILE = "/ServerLog.txt";
+    
     private DatagramSocket socket;
     private int requestNum = 0;
     private Log logger;
 
-    public Server(int port) throws IOException {
-        this.socket = new DatagramSocket(port);
+    public Server() throws IOException {
+        this.socket = new DatagramSocket(PORT);
         this.logger = new Log(LOG_FOLDER + LOG_FILE);
+        System.out.println("Listening on port " + PORT);
     }
 
     public void run() {
+        boolean on = true;
         try {
-            while(true) {
+            while(on) {
                 byte[] buffer = new byte[Protocol.messageSize];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);        
                 socket.receive(packet);
@@ -31,7 +35,8 @@ public class Server implements Runnable {
                 t.start();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            on = false;
+            System.out.println("[Server] Shutting down...");
         }
     }
 }
