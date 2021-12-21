@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.logs;
 
 import java.io.File;
 import java.io.FileWriter;

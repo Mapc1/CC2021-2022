@@ -1,9 +1,12 @@
-package com.cc;
+package com.cc.ffsync.auth;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.SocketException;
 import java.util.Random;
+
+import com.cc.ffsync.logs.Log;
+import com.cc.ffsync.logs.LogType;
 
 public class Encryption {
     private Integer privKey;

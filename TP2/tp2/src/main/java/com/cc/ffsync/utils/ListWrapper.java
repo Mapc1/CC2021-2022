@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.utils;
 
 import java.util.ArrayList;
 import java.util.List;

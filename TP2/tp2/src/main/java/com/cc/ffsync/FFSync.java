@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -6,7 +6,11 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Peer 
+import com.cc.ffsync.client.Client;
+import com.cc.ffsync.server.Server;
+import com.cc.ffsync.utils.ListWrapper;
+
+public class FFSync 
 {
     public static final String LOG_FOLDER = System.getProperty("user.home") + "/logs";
     //public static final String LOG_FOLDER =  "logs";
@@ -18,7 +22,7 @@ public class Peer
         Thread server;
         //Thread client;
 
-        Peer.SYNC_FOLDER = args[0];
+        FFSync.SYNC_FOLDER = args[0];
 //        InetAddress ip = InetAddress.getByName(args[1]);
         List<Thread> threads = new ArrayList<>();
 

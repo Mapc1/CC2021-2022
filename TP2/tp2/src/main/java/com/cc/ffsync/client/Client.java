@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.client;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -17,8 +17,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.cc.ffsync.FFSync;
+import com.cc.ffsync.logs.Log;
+import com.cc.ffsync.logs.LogType;
+import com.cc.ffsync.protocol.Protocol;
+import com.cc.ffsync.server.Server;
+import com.cc.ffsync.utils.FilesHandler;
+
 public class Client implements Runnable {
-    public static final String LOG_FOLDER = Peer.LOG_FOLDER + "/Client";
+    public static final String LOG_FOLDER = FFSync.LOG_FOLDER + "/Client";
     private static final String LOG_FILE = "/ClientLog.txt";
 
     private InetAddress serverIP;
@@ -50,7 +57,7 @@ public class Client implements Runnable {
                 sendLS();
 
                 String theirMetaData = getMetaData();
-                String ourMetaData = String.join("//", FilesHandler.readAllFilesName(Peer.SYNC_FOLDER));
+                String ourMetaData = String.join("//", FilesHandler.readAllFilesName(FFSync.SYNC_FOLDER));
                 
                 System.out.println("[" + serverIP + "] Comparing folders...");
                 List<String> files = cmpFolders(ourMetaData, theirMetaData);
@@ -59,7 +66,7 @@ public class Client implements Runnable {
 
                 for(String file : files) {
                     String fileName = file.split(";")[0];
-                    if(!Peer.LW.contains(fileName)) {
+                    if(!FFSync.LW.contains(fileName)) {
                         System.out.println("[" + serverIP + "] Requesting file: " + fileName);
                         Thread t = new Thread(new FileRequester(file, serverIP));
                         threads.add(t);
@@ -92,7 +99,7 @@ public class Client implements Runnable {
 
             String[] tokens = file.split(";");
             if(tokens[1].equals("true")) {
-                Path path = Paths.get(Peer.SYNC_FOLDER + tokens[0]);
+                Path path = Paths.get(FFSync.SYNC_FOLDER + tokens[0]);
                 Files.createDirectories(path);
                 
                 FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(tokens[3]));

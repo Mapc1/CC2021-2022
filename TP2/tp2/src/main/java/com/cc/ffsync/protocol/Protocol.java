@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

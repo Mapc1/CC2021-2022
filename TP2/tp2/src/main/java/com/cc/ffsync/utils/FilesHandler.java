@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.utils;
 
 import java.io.File;
 import java.io.IOException;

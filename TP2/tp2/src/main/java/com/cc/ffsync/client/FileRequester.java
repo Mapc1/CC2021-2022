@@ -1,4 +1,4 @@
-package com.cc;
+package com.cc.ffsync.client;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,6 +11,13 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
+
+import com.cc.ffsync.FFSync;
+import com.cc.ffsync.auth.Encryption;
+import com.cc.ffsync.logs.Log;
+import com.cc.ffsync.logs.LogType;
+import com.cc.ffsync.protocol.Protocol;
+import com.cc.ffsync.server.Server;
 
 public class FileRequester implements Runnable {
     DatagramSocket socket;
@@ -26,7 +33,6 @@ public class FileRequester implements Runnable {
     String metadata;
 
     public FileRequester(String metadata, InetAddress serverIP) throws IOException {
-        this.e = new Encryption(logger);
         this.socket = new DatagramSocket();
         this.socket.setSoTimeout(timeout);
 
@@ -35,6 +41,7 @@ public class FileRequester implements Runnable {
         this.metadata = metadata;
         String fileName = metadata.split(";")[0];
         this.logger = new Log(Client.LOG_FOLDER + fileName + ".txt");
+        this.e = new Encryption(logger);
         logger.write("Connection open in: " + serverPort + " ip: " + serverIP.getAddress(), LogType.GOOD);
     }
 
@@ -149,11 +156,11 @@ public class FileRequester implements Runnable {
 
     private void getFileData(String metadata) throws IOException {
         String[] dados = metadata.split(";");
-        String filePath = Peer.SYNC_FOLDER + "/" + dados[0];
+        String filePath = FFSync.SYNC_FOLDER + "/" + dados[0];
         File f = new File(filePath);
         FileOutputStream fos = new FileOutputStream(f);
 
-        Peer.LW.add(dados[0]);
+        FFSync.LW.add(dados[0]);
 
         /* Setting all times to 0 so that in case of an error the other machine does not
          * try to fetch these broken files
@@ -235,7 +242,7 @@ public class FileRequester implements Runnable {
         attr.setTimes(modifiedTime, accessTime, createTime);
         fos.close();
 
-        Peer.LW.remove(dados[0]);
+        FFSync.LW.remove(dados[0]);
     }
 
     private void sendAck(byte type, long seqNum) throws IOException {
