@@ -3,15 +3,17 @@ package com.cc;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
 
 public class Server implements Runnable {
-    private String syncFolder;
+    public static final String LOG_FOLDER = Peer.LOG_FOLDER + "/Server";
+    private static final String LOG_FILE = "/ServerLog.txt";
     private DatagramSocket socket;
+    private int requestNum = 0;
+    private Log logger;
 
-    public Server(String syncFolder, int port) throws SocketException {
-        this.syncFolder = syncFolder;
-        socket = new DatagramSocket(port);
+    public Server(int port) throws IOException {
+        this.socket = new DatagramSocket(port);
+        this.logger = new Log(LOG_FOLDER + LOG_FILE);
     }
 
     public void run() {
@@ -21,7 +23,10 @@ public class Server implements Runnable {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);        
                 socket.receive(packet);
  
-                Thread t = new Thread(new ServerHandler(packet, syncFolder));
+                logger.write("Packet received. Passing it to client handler nº" + requestNum + "...", LogType.GOOD);
+
+                Thread t = new Thread(new ClientHandler(packet, "/Request_" + requestNum));
+                requestNum++;
 
                 t.start();
             }
