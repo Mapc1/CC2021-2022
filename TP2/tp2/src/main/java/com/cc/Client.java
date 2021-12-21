@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Client implements Runnable {
     public static final String LOG_FOLDER = Peer.LOG_FOLDER + "/Client";
@@ -74,7 +75,8 @@ public class Client implements Runnable {
                 System.out.println("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^");
                 logger.write("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^", LogType.GOOD);
                 logger.newLine();
-                Thread.sleep(10000);
+                TimeUnit.MINUTES.sleep(10);;
+                //TimeUnit.SECONDS.sleep(10);
             }
         } catch (IOException | InterruptedException e) {
             // TODO Auto-generated catch block
