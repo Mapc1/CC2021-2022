@@ -42,7 +42,7 @@ public class ClientHandler implements Runnable {
     public void run() {
         try {
             //connect();
-/*
+            /*
             byte[] reqBuff = new byte[Protocol.messageSize];
             DatagramPacket requestPacket = new DatagramPacket(reqBuff, reqBuff.length);
 
@@ -53,7 +53,7 @@ public class ClientHandler implements Runnable {
                     requestReceived = true;
                 } catch (SocketTimeoutException e) {}
             }
-*/
+            */
             byte[] ackBuff = Protocol.createAckMessage((int) Protocol.LS_TYPE);
             DatagramPacket ackPacket = new DatagramPacket(ackBuff, ackBuff.length, clientIP, clientPort);
             socket.send(ackPacket);
@@ -75,8 +75,6 @@ public class ClientHandler implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-        
     }
 
     private void connect() throws IOException {
