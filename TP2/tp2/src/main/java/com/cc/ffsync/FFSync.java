@@ -2,7 +2,6 @@ package com.cc.ffsync;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,14 +9,19 @@ import com.cc.ffsync.client.Client;
 import com.cc.ffsync.server.Server;
 import com.cc.ffsync.utils.ListWrapper;
 
-public class FFSync 
-{
+public class FFSync implements Runnable {
     public static final String LOG_FOLDER = "logs";
     public static String SYNC_FOLDER;
 
     public static ListWrapper LW  = new ListWrapper();
 
-    public static void main( String[] args ) throws IOException {
+    private String[] args;
+
+    public FFSync(String[] args) {
+        this.args = args;
+    }
+
+    public void run() {
         Thread server;
 
         FFSync.SYNC_FOLDER = args[0];
@@ -40,7 +44,7 @@ public class FFSync
             threads = new ArrayList<>();
 
             server.join();
-        } catch (NumberFormatException | SocketException | InterruptedException e) {
+        } catch (NumberFormatException | InterruptedException | IOException e) {
             e.printStackTrace();
         }
     }
