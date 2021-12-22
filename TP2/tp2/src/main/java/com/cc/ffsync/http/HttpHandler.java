@@ -35,9 +35,33 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/ServerLog.txt");
+            log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server" + "/ServerLog.txt");
 
             sb.append(log);
+        } catch (IOException e) {
+            sb.append("Erro na leitura do ficheiro de logs.");
+            e.printStackTrace();
+        }
+
+        return sb.toString();
+    }
+
+    private String serverRequestsLogMessage() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("HTTP/1.1 200 OK\r\n\r\n");
+
+        try {
+            List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Server");
+            String log;
+
+            for (String file : files) {
+                if (!file.equals("ServerLog.txt")) {
+                    log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server/" + file);
+                    sb.append("Ficheiro ").append(file).append("\n");
+                    sb.append(log).append("\n\n");
+                }
+            }
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro de logs.");
             e.printStackTrace();
@@ -53,9 +77,33 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/ClientLog.txt");
+            log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Client" + "/ClientLog.txt");
 
             sb.append(log);
+        } catch (IOException e) {
+            sb.append("Erro na leitura do ficheiro de logs.");
+            e.printStackTrace();
+        }
+
+        return sb.toString();
+    }
+
+    private String clientFileTransfLogMessage() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("HTTP/1.1 200 OK\r\n\r\n");
+
+        try {
+            List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Client");
+            String log;
+
+            for (String file : files) {
+                if (!file.equals("ClientLog.txt")) {
+                    log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Client/" + file);
+                    sb.append("Ficheiro ").append(file).append("\n");
+                    sb.append(log).append("\n\n");
+                }
+            }
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro de logs.");
             e.printStackTrace();
@@ -96,7 +144,8 @@ public class HttpHandler implements Runnable {
         StringBuilder sb = new StringBuilder();
 
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
-        sb.append("<p style=\"text-align: left;\"><span style=\"font-size: 30px;\"><strong>FTRapid</strong></span></p>");
+        sb.append(
+                "<p style=\"text-align: left;\"><span style=\"font-size: 30px;\"><strong>FTRapid</strong></span></p>");
         sb.append("<p style=\"text-align: center;\"><br></p>");
         sb.append(
                 "<p style=\"text-align: left;\"><span style=\"font-size: 18px;\">Aplica&ccedil;&atilde;o de sincroniza&ccedil;&atilde;o de pastas entre clientes.</span></p>");
@@ -104,9 +153,13 @@ public class HttpHandler implements Runnable {
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<strong><em>/syncstatus</em></strong> - <span style=\"font-size: 14px;\">Estado de sincroniza&ccedil;&atilde;o dos ficheiros</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientlog</strong></em> - <span style=\"font-size: 14px;\">Log do cliente do FFSync</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientlog</strong></em> - <span style=\"font-size: 14px;\">Log do cliente do FTRapid</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FFSync</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientFTlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FTRapid</span></p>");
+        sb.append(
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FTRapid</span></p>");
+        sb.append(
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/srequestslogs</strong></em> - <span style=\"font-size: 14px;\">Log do pedidos que o servidor recebeu do FTRapid</span></p>");
 
         return sb.toString();
     }
@@ -127,8 +180,12 @@ public class HttpHandler implements Runnable {
                 httpResponse = rootMessage();
             } else if (type.equals("/clientlog")) {
                 httpResponse = clientLogMessage();
+            } else if (type.equals("/clientFTlog")) {
+                httpResponse = clientFileTransfLogMessage();
             } else if (type.equals("/serverlog")) {
                 httpResponse = serverLogMessage();
+            } else if (type.equals("/srequestslogs")) {
+                httpResponse = serverRequestsLogMessage();
             } else if (type.equals("/syncstatus")) {
                 httpResponse = syncStatusMessage();
             } else {
