@@ -50,19 +50,6 @@ public class ClientHandler implements Runnable {
     
     public void run() {
         try {
-            //connect();
-            /*
-            byte[] reqBuff = new byte[Protocol.messageSize];
-            DatagramPacket requestPacket = new DatagramPacket(reqBuff, reqBuff.length);
-
-            boolean requestReceived = false;
-            while(!requestReceived) {
-                try {
-                    socket.receive(requestPacket);
-                    requestReceived = true;
-                } catch (SocketTimeoutException e) {}
-            }
-            */
             byte[] ackBuff = Protocol.createAckMessage((int) Protocol.LS_TYPE);
             DatagramPacket ackPacket = new DatagramPacket(ackBuff, ackBuff.length, clientIP, clientPort);
             socket.send(ackPacket);
@@ -85,79 +72,7 @@ public class ClientHandler implements Runnable {
 			e.printStackTrace();
 		}
     }
-/*
-    private void connect() throws IOException {
-        byte[] inBuffer = new byte[Protocol.messageSize];
 
-        DatagramPacket inPacket = new DatagramPacket(inBuffer, inBuffer.length);
-        
-        byte[] ack = { Protocol.ACK_TYPE };
-        DatagramPacket outPacket = new DatagramPacket(ack, ack.length, clientIP, clientPort);
-        socket.send(outPacket);
-
-        ByteBuffer otherKeyBB = ByteBuffer.wrap(connectPacket.getData());
-        byte type = otherKeyBB.get();
-        short size = otherKeyBB.getShort();
-
-        byte[] otherKeyArr = new byte[size];
-        System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
-
-        /*boolean otherKeyReceived = false;
-        while(!otherKeyReceived) {
-            try {
-                socket.receive(inPacket);
-
-                ByteBuffer otherKeyBB = ByteBuffer.wrap(inPacket.getData());
-                byte type = otherKeyBB.get();
-                if(type == Protocol.KEY_TYPE) {
-                    short size = otherKeyBB.getShort();
-
-                    otherKeyArr = new byte[size];
-                    System.arraycopy(otherKeyBB.array(), 3, otherKeyArr, 0, size);
-                    otherKeyReceived = true;
-
-                    serverPort = inPacket.getPort();
-                    serverIP = inPacket.getAddress();
-
-                    byte[] ack = new byte[1];
-                    ack[0] = Protocol.ACK_TYPE;
-
-                    DatagramPacket outPacket = new DatagramPacket(ack, ack.length, serverIP, serverPort);
-                    socket.send(outPacket);
-                }
-            } catch (SocketTimeoutException e) {
-                System.err.println(DEBUG_PREFIX + "Did not receive anything. Still waiting...");
-            }
-        }
-//
-        byte[] publicKey = e.calcPublicKey();
-        e.calcSharedKey(otherKeyArr);
-
-        size = (short) publicKey.length;
-        ByteBuffer pubKeyBB = ByteBuffer.allocate(3+size);
-        pubKeyBB.put(Protocol.KEY_TYPE);
-        pubKeyBB.putShort(size);
-        pubKeyBB.put(publicKey);
-
-        outPacket = new DatagramPacket(pubKeyBB.array(), pubKeyBB.array().length, clientIP, clientPort);
-
-        boolean ackReceived = false;
-        while(!ackReceived) {
-            try {
-            socket.send(outPacket);
-            socket.receive(inPacket);
-            
-            if(inPacket.getData()[0] == Protocol.ACK_TYPE) {
-                ackReceived = true;
-            }
-            } catch (SocketTimeoutException e) {
-                logger.write("Timeout ocurred. Sending ACK again...", LogType.TIMEOUT);
-            }
-        }
-
-        logger.write("We're connected! YAY", LogType.GOOD);
-    }
-*/
     private void sendFileData(String metadata) throws IOException {
         String filePath = FFSync.SYNC_FOLDER + "/" + metadata.split(";")[0];
         byte[] listenBuff = new byte[Protocol.messageSize];
