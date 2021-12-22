@@ -12,7 +12,7 @@ import com.cc.ffsync.utils.ListWrapper;
 
 public class FFSync 
 {
-    public static final String LOG_FOLDER = System.getProperty("user.home") + "/logs";
+    public static final String LOG_FOLDER = "logs";
     public static String SYNC_FOLDER;
 
     public static ListWrapper LW  = new ListWrapper();
@@ -40,9 +40,7 @@ public class FFSync
             threads = new ArrayList<>();
 
             server.join();
-        } catch (NumberFormatException | SocketException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (NumberFormatException | SocketException | InterruptedException e) {
             e.printStackTrace();
         }
     }
