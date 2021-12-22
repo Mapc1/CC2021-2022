@@ -147,7 +147,7 @@ public class ClientHandler implements Runnable {
     private void sendMetaData(String path) throws IOException {
         byte[] listenBuff = new byte[Protocol.messageSize];
 
-        List<String> filesName = FilesHandler.readAllFilesName(path);
+        List<String> filesName = FilesHandler.readAllFilesMetadata(path);
         filesName = removeSyncing(filesName);
         List<byte[]> pacotes = Protocol.createInfoMessage(filesName);
 

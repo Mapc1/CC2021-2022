@@ -58,7 +58,7 @@ public class Client implements Runnable {
                 sendLS();
 
                 String theirMetaData = getMetaData();
-                String ourMetaData = String.join("//", FilesHandler.readAllFilesName(FFSync.SYNC_FOLDER));
+                String ourMetaData = String.join("//", FilesHandler.readAllFilesMetadata(FFSync.SYNC_FOLDER));
                 
                 System.out.println("[" + id + "] Comparing folders...");
                 List<String> files = cmpFolders(ourMetaData, theirMetaData);
