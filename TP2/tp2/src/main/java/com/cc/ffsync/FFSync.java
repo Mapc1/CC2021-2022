@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.cc.ffsync.client.Client;
+import com.cc.ffsync.http.HttpServer;
 import com.cc.ffsync.server.Server;
 import com.cc.ffsync.utils.ListWrapper;
 
@@ -19,13 +20,16 @@ public class FFSync
 
     public static void main( String[] args ) throws IOException {
         Thread server;
+        Thread httpServer;
 
-        FFSync.SYNC_FOLDER = args[0];
+        // FFSync.SYNC_FOLDER = args[0];
         List<Thread> threads = new ArrayList<>();
 
         try {
             server = new Thread(new Server());
             server.start();
+            httpServer = new Thread(new HttpServer());
+            httpServer.start();
 
             for(int i = 1; i < args.length; i++) {
                 InetAddress ip = InetAddress.getByName(args[i]);

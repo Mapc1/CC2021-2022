@@ -3,6 +3,7 @@ package com.cc.ffsync.utils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
@@ -52,6 +53,7 @@ public class FilesHandler {
 
     /**
      * Método que devolve o tamanho do ficheiro a que os metadados pertencem
+     * 
      * @param metadata Metadados do ficheiro
      * @return Tamanho do ficheiro
      */
@@ -74,5 +76,13 @@ public class FilesHandler {
 
         return res;
 
+    }
+
+    public static String readFileText(String path) throws IOException {
+        Path fileName = Path.of(path);
+
+        String text = Files.readString(fileName);
+
+        return text;
     }
 }

@@ -5,10 +5,7 @@ Tipos de mensagem
 4 - Transferir ficheiro
 10 - Inicio de conexão
 20 - ack
-44 - erros
 
-falta
-erros
 
 Tipo 1
 -----------------------------------

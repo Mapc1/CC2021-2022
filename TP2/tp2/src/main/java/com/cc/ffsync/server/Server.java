@@ -10,7 +10,7 @@ import com.cc.ffsync.logs.LogType;
 import com.cc.ffsync.protocol.Protocol;
 
 public class Server implements Runnable {
-    public static final int PORT = 80;
+    public static final int PORT = 8080;
     public static final String LOG_FOLDER = FFSync.LOG_FOLDER + "/Server";
     private static final String LOG_FILE = "/ServerLog.txt";
     
