@@ -20,7 +20,7 @@ public class FilesHandler {
      * @return Lista com os metadados de todos of ficheiros/pastas
      * @throws IOException
      */
-    public static List<String> readAllFilesName(String filePath) throws IOException {
+    public static List<String> readAllFilesMetadata(String filePath) throws IOException {
         List<String> files = Files.walk(Paths.get(filePath)).map(path -> {
             String metadata = null;
             try {
@@ -33,6 +33,27 @@ public class FilesHandler {
         }).collect(Collectors.toList());
 
         files.remove(0);
+        return files;
+    }
+
+    public static List<String> readAllFilesName(String filePath) throws IOException {
+        List<String> files = Files.walk(Paths.get(filePath)).map(path -> {
+            if (path.toFile().isDirectory())
+                return "";
+
+            String fileName = path.toFile().getPath();
+            fileName = fileName.substring(filePath.length() + 1);
+
+            return fileName;
+        }).collect(Collectors.toList());
+
+        files.remove(0);
+        for (int i = 0; i < files.size(); i++) {
+            if (files.get(i).equals("")) {
+                files.remove(i);
+                i--;
+            }
+        }
         return files;
     }
 

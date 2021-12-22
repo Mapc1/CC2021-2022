@@ -26,7 +26,7 @@ public class FFSync implements Runnable {
         Thread server;
         Thread httpServer;
 
-        // FFSync.SYNC_FOLDER = args[0];
+        FFSync.SYNC_FOLDER = args[0];
         List<Thread> threads = new ArrayList<>();
 
         try {
