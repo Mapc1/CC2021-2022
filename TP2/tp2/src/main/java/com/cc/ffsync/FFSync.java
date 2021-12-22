@@ -29,7 +29,7 @@ public class FFSync
 
             for(int i = 1; i < args.length; i++) {
                 InetAddress ip = InetAddress.getByName(args[i]);
-                Thread t = new Thread(new Client(ip));
+                Thread t = new Thread(new Client(ip, args[i]));
                 t.start();
                 threads.add(t);
             }

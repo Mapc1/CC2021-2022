@@ -26,22 +26,26 @@ import com.cc.ffsync.utils.FilesHandler;
 
 public class Client implements Runnable {
     public static final String LOG_FOLDER = FFSync.LOG_FOLDER + "/Client";
-    private static final String LOG_FILE = "/ClientLog.txt";
+    private String logFile;
+
+    private String id;
 
     private InetAddress serverIP;
     private int serverPort = Server.PORT;
     private DatagramSocket socket;
     private Log logger;
     
-    double estimatedRTT = 500;
-    double devRTT = 50;
+    private double estimatedRTT = 500;
+    private double devRTT = 50;
     private int timeout = 500;
 
-    public Client(InetAddress serverIP) throws IOException {
+    public Client(InetAddress serverIP, String id) throws IOException {
+        this.id = id;
+        this.logFile = "/Client_" + id + "_log.txt";
         this.serverIP = serverIP;
         this.socket = new DatagramSocket();
         this.socket.setSoTimeout(timeout);
-        this.logger = new Log(LOG_FOLDER + LOG_FILE);
+        this.logger = new Log(LOG_FOLDER + logFile);
     }
 
     @Override
@@ -50,13 +54,13 @@ public class Client implements Runnable {
         try {
             List<Thread> threads = new ArrayList<>();
             while(on) {
-                System.out.println("[" + serverIP + "] Getting their files...");
+                System.out.println("[" + id + "] Getting their files...");
                 sendLS();
 
                 String theirMetaData = getMetaData();
                 String ourMetaData = String.join("//", FilesHandler.readAllFilesName(FFSync.SYNC_FOLDER));
                 
-                System.out.println("[" + serverIP + "] Comparing folders...");
+                System.out.println("[" + id + "] Comparing folders...");
                 List<String> files = cmpFolders(ourMetaData, theirMetaData);
 
                 files = createFolders(files);
@@ -64,7 +68,7 @@ public class Client implements Runnable {
                 for(String file : files) {
                     String fileName = file.split(";")[0];
                     if(!FFSync.LW.contains(fileName)) {
-                        System.out.println("[" + serverIP + "] Requesting file: " + fileName);
+                        System.out.println("[" + id + "] Requesting file: " + fileName);
                         Thread t = new Thread(new FileRequester(file, serverIP));
                         threads.add(t);
                         t.start();
@@ -77,14 +81,14 @@ public class Client implements Runnable {
 
                 threads = new ArrayList<>();
 
-                System.out.println("[" + serverIP + "] Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^");
-                logger.write("[" + serverIP + "] Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^", LogType.GOOD);
+                System.out.println("[" + id + "] Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^");
+                logger.write("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^", LogType.GOOD);
                 logger.newLine();
                 TimeUnit.SECONDS.sleep(10);
             }
         } catch (IOException | InterruptedException e) {
             on = false;
-            System.out.println("[Client] [" + serverIP + "] Shutting down...");
+            System.out.println("[Client] [" + id + "] Shutting down...");
         }
         
     }
@@ -222,7 +226,6 @@ public class Client implements Runnable {
                 try {
                     socket.receive(recvPacket);
                     long endRTT = System.currentTimeMillis();
-                    //byte[] decrypted = e.decrypt(recvPacket.getData(), recvPacket.getData().length);
                     timeout = Protocol.calculateRTT(startRTT, endRTT, estimatedRTT, devRTT);
                     socket.setSoTimeout(timeout);
 
@@ -297,7 +300,6 @@ public class Client implements Runnable {
 
     private void sendAck(byte type, long nSeqs) throws IOException {
         byte[] buffer = Protocol.createAckMessage((int) type, nSeqs);
-        //byte[] encrypted = e.encrypt(buffer, buffer.length);
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
 
         socket.send(packet);
