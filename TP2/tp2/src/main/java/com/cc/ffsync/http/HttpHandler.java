@@ -155,7 +155,7 @@ public class HttpHandler implements Runnable {
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientlog</strong></em> - <span style=\"font-size: 14px;\">Log do cliente do FTRapid</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientFTlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FTRapid</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientftlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FTRapid</span></p>");
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FTRapid</span></p>");
         sb.append(
@@ -180,7 +180,7 @@ public class HttpHandler implements Runnable {
                 httpResponse = rootMessage();
             } else if (type.equals("/clientlog")) {
                 httpResponse = clientLogMessage();
-            } else if (type.equals("/clientFTlog")) {
+            } else if (type.equals("/clientftlog")) {
                 httpResponse = clientFileTransfLogMessage();
             } else if (type.equals("/serverlog")) {
                 httpResponse = serverLogMessage();
