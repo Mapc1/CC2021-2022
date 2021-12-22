@@ -47,8 +47,6 @@ public class FileRequester implements Runnable {
 
     public void run() {
         try {
-            //connect();
-
             sendGetFile(metadata);
             getFileData(metadata);
 		} catch (IOException e) {
@@ -56,69 +54,7 @@ public class FileRequester implements Runnable {
 			e.printStackTrace();
 		}
     }
-/*
-    private void connect() throws IOException {
-        byte[] buffer = new byte[Protocol.messageSize];
-        byte[] publicKey = e.calcPublicKey();
-        short size = (short) publicKey.length;
 
-        ByteBuffer publicKeyBB = ByteBuffer.allocate(3+size);
-        publicKeyBB.put(Protocol.KEY_TYPE);
-        publicKeyBB.putShort(size);
-        publicKeyBB.put(publicKey);
-
-        DatagramPacket packet = new DatagramPacket(publicKeyBB.array(), publicKeyBB.array().length, serverIP, serverPort);
-
-        boolean ackReceived = false;
-        while(!ackReceived) {
-            try {
-                socket.send(packet);
-                logger.write("PubKey sent, awaiting response...", LogType.GOOD);
-
-                socket.receive(packet);
-
-                if(packet.getData()[0] == Protocol.ACK_TYPE) {
-                    ackReceived = true;
-                }
-            } catch (SocketTimeoutException e) {
-                logger.write("Timeout ocurred. Trying again...", LogType.TIMEOUT);
-            }
-        }
-
-        logger.write("Ack received!", LogType.GOOD);
-        DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-
-        boolean otherKeyReceived = false;
-        while(!otherKeyReceived) {
-            try {
-                socket.receive(response);      
-                logger.write("Packet received. Checking contents...", LogType.GOOD);
-
-                ByteBuffer rBB = ByteBuffer.wrap(response.getData());
-                byte type = rBB.get();
-
-                if(type == Protocol.KEY_TYPE) {
-                    logger.write("Packet type correct. Reading key...", LogType.GOOD);
-                    short rSize = rBB.getShort();
-                    byte[] otherKey = new byte[rSize];
-                    System.arraycopy(rBB.array(), 3, otherKey, 0, rSize);
-
-                    e.calcSharedKey(otherKey);
-                    otherKeyReceived = true;
-
-                    byte[] ack = {Protocol.ACK_TYPE};
-                    packet = new DatagramPacket(ack, ack.length, serverIP, serverPort);
-                    socket.send(packet);
-                } else { 
-                    logger.write("Wrong type packet. Discarding it...", LogType.ERROR);
-                }
-            } catch (SocketTimeoutException e) {
-                logger.write("Did not receive a key. Still waiting...", LogType.TIMEOUT);
-            }
-        }
-        logger.write("We're connected! YAY", LogType.GOOD);
-    }
-*/
     private void sendGetFile(String metaData) throws IOException {
         byte[] metaBuff = metaData.getBytes();
         ByteBuffer reqBB = ByteBuffer.allocate(3 + metaBuff.length);
