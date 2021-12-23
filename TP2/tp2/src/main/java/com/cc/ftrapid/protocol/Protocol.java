@@ -49,13 +49,11 @@ public class Protocol {
             byte[] partMetaData = ByteBuffer.allocate(metadataMaxSize).array();
             System.arraycopy(metaDataBytes, 0, partMetaData, 0, metadataMaxSize);
             metaDataBytes = cutByteArray(metaDataBytes, metadataMaxSize, metaDataBytes.length - metadataMaxSize);
-            // bytes para o nº da sequencia
-            //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber++).array();
             
+            // bytes para o nº da sequencia
             bb.putShort(sequenceNumber++);
 
             // dois bytes para o tamanho dos dados
-            //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(partMetaData.length).array();
             bb.putShort((short) partMetaData.length);
 
             // adiciona os bytes com os metadados à mensagem
@@ -69,11 +67,9 @@ public class Protocol {
         bb.put(Protocol.INFO_TYPE);
 
         // bytes para o nº da sequencia
-        //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
         bb.putShort(sequenceNumber);
 
         // dois bytes para o tamanho dos dados
-        //byte[] metaDataSize = ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
         bb.putShort((short) metaDataBytes.length);
 
         // adiciona os bytes com os metadados à mensagem
@@ -164,7 +160,6 @@ public class Protocol {
         bb.put((byte) (int) messageType);
 
         // bytes com o nº de sequências que esta transferência terá
-        //byte[] numSequences = ByteBuffer.allocate(8).putLong(seqNumber).array();
         bb.putLong(seqNumber);
 
         return bb.array();
