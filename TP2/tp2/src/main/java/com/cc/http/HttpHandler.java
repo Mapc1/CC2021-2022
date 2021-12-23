@@ -1,4 +1,4 @@
-package com.cc.ftrapid.http;
+package com.cc.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
