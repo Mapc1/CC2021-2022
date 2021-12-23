@@ -1,4 +1,4 @@
-package com.cc.ftrapid.http;
+package com.cc.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -90,24 +90,6 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
-    private String clientLogMessage() {
-        StringBuilder sb = new StringBuilder();
-        String log;
-
-        sb.append("HTTP/1.1 200 OK\r\n\r\n");
-
-        try {
-            log = FilesHandler.readFileText(FTRapid.LOG_FOLDER + "/Client" + "/ClientLog.txt");
-
-            sb.append(log);
-        } catch (IOException e) {
-            sb.append("Erro na leitura do ficheiro de logs.");
-            e.printStackTrace();
-        }
-
-        return sb.toString();
-    }
-
     private String clientAllFileTransfLogMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -118,9 +100,7 @@ public class HttpHandler implements Runnable {
             sb.append("<p><span style=\"font-size: 18px;\">Ficheiros com log:</span></p><p></p>");
 
             for (String file : files) {
-                if (!file.equals("ClientLog.txt")) {
-                    sb.append("<p>").append(file).append("</p>");
-                }
+                sb.append("<p>").append(file).append("</p>");
             }
             sb.append(
                     "<p><span style=\"font-size: 18px;\">Para verificar o log de um ficheiro, <em>.../clientftlog/exfile</em></span></p>");
@@ -184,7 +164,7 @@ public class HttpHandler implements Runnable {
 
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
         sb.append(
-                "<p style=\"text-align: left;\"><span style=\"font-size: 30px;\"><strong>FTRapid</strong></span></p>");
+                "<p style=\"text-align: left;\"><span style=\"font-size: 30px;\"><strong>FFSync</strong></span></p>");
         sb.append("<p style=\"text-align: center;\"><br></p>");
         sb.append(
                 "<p style=\"text-align: left;\"><span style=\"font-size: 18px;\">Aplica&ccedil;&atilde;o de sincroniza&ccedil;&atilde;o de pastas entre clientes.</span></p>");
@@ -192,13 +172,11 @@ public class HttpHandler implements Runnable {
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<strong><em>/syncstatus</em></strong> - <span style=\"font-size: 14px;\">Estado de sincroniza&ccedil;&atilde;o dos ficheiros</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientlog</strong></em> - <span style=\"font-size: 14px;\">Log do cliente do FTRapid</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientftlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FFSync</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientftlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FTRapid</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FFSync</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FTRapid</span></p>");
-        sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/srequestslogs</strong></em> - <span style=\"font-size: 14px;\">Log do pedidos que o servidor recebeu do FTRapid</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/srequestslogs</strong></em> - <span style=\"font-size: 14px;\">Log do pedidos que o servidor recebeu do FFSync</span></p>");
 
         return sb.toString();
     }
@@ -217,8 +195,6 @@ public class HttpHandler implements Runnable {
 
             if (type.equals("/")) {
                 httpResponse = rootMessage();
-            } else if (type.equals("/clientlog")) {
-                httpResponse = clientLogMessage();
             } else if (type.equals("/clientftlog")) {
                 httpResponse = clientAllFileTransfLogMessage();
             } else if (type.startsWith("/clientftlog")) {
