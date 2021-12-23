@@ -1,4 +1,4 @@
-package com.cc.ffsync.client;
+package com.cc.ftrapid.client;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -17,15 +17,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.cc.ffsync.FFSync;
-import com.cc.ffsync.logs.Log;
-import com.cc.ffsync.logs.LogType;
-import com.cc.ffsync.protocol.Protocol;
-import com.cc.ffsync.server.Server;
-import com.cc.ffsync.utils.FilesHandler;
+import com.cc.ftrapid.FTRapid;
+import com.cc.ftrapid.logs.Log;
+import com.cc.ftrapid.logs.LogType;
+import com.cc.ftrapid.protocol.Protocol;
+import com.cc.ftrapid.server.Server;
+import com.cc.ftrapid.utils.FilesHandler;
 
 public class Client implements Runnable {
-    public static final String LOG_FOLDER = FFSync.LOG_FOLDER + "/Client";
+    public static final String LOG_FOLDER = FTRapid.LOG_FOLDER + "/Client";
     private String logFile;
 
     private String id;
@@ -58,7 +58,7 @@ public class Client implements Runnable {
                 sendLS();
 
                 String theirMetaData = getMetaData();
-                String ourMetaData = String.join("//", FilesHandler.readAllFilesMetadata(FFSync.SYNC_FOLDER));
+                String ourMetaData = String.join("//", FilesHandler.readAllFilesMetadata(FTRapid.SYNC_FOLDER));
                 
                 System.out.println("[" + id + "] Comparing folders...");
                 List<String> files = cmpFolders(ourMetaData, theirMetaData);
@@ -67,7 +67,7 @@ public class Client implements Runnable {
 
                 for(String file : files) {
                     String fileName = file.split(";")[0];
-                    if(!FFSync.LW.contains(fileName)) {
+                    if(!FTRapid.LW.contains(fileName)) {
                         System.out.println("[" + id + "] Requesting file: " + fileName);
                         Thread t = new Thread(new FileRequester(file, serverIP));
                         threads.add(t);
@@ -84,7 +84,7 @@ public class Client implements Runnable {
                 System.out.println("[" + id + "] Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^");
                 logger.write("Folder synced as of " + LocalDateTime.now() + ". Going to sleep... ^^", LogType.GOOD);
                 logger.newLine();
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.MINUTES.sleep(10);
             }
         } catch (IOException | InterruptedException e) {
             on = false;
@@ -100,7 +100,7 @@ public class Client implements Runnable {
 
             String[] tokens = file.split(";");
             if(tokens[1].equals("true")) {
-                Path path = Paths.get(FFSync.SYNC_FOLDER + tokens[0]);
+                Path path = Paths.get(FTRapid.SYNC_FOLDER + tokens[0]);
                 Files.createDirectories(path);
                 
                 FileTime modifiedTime = FileTime.fromMillis(Long.parseLong(tokens[3]));

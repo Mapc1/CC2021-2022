@@ -1,4 +1,4 @@
-package com.cc.ffsync.server;
+package com.cc.ftrapid.server;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,12 +13,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.cc.ffsync.FFSync;
-import com.cc.ffsync.auth.Encryption;
-import com.cc.ffsync.logs.Log;
-import com.cc.ffsync.logs.LogType;
-import com.cc.ffsync.protocol.Protocol;
-import com.cc.ffsync.utils.FilesHandler;
+import com.cc.ftrapid.FTRapid;
+import com.cc.ftrapid.auth.Encryption;
+import com.cc.ftrapid.logs.Log;
+import com.cc.ftrapid.logs.LogType;
+import com.cc.ftrapid.protocol.Protocol;
+import com.cc.ftrapid.utils.FilesHandler;
 
 public class ClientHandler implements Runnable { 
     Encryption e;
@@ -58,7 +58,7 @@ public class ClientHandler implements Runnable {
             byte requestType = requestBB.get();
 		    
             switch(requestType) {
-                case Protocol.LS_TYPE : sendMetaData(FFSync.SYNC_FOLDER); break;
+                case Protocol.LS_TYPE : sendMetaData(FTRapid.SYNC_FOLDER); break;
                 case Protocol.FILE_REQ_TYPE :
                     short size = requestBB.getShort();
                     byte[] buf = new byte[size];
@@ -74,7 +74,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void sendFileData(String metadata) throws IOException {
-        String filePath = FFSync.SYNC_FOLDER + "/" + metadata.split(";")[0];
+        String filePath = FTRapid.SYNC_FOLDER + "/" + metadata.split(";")[0];
         byte[] listenBuff = new byte[Protocol.messageSize];
 
         File f = new File(filePath);
@@ -219,7 +219,7 @@ public class ClientHandler implements Runnable {
         List<String> newList = new ArrayList<>();
         for(String file : files) {
             String fileName = file.split(";")[0];
-            if(!FFSync.LW.contains(fileName)) {
+            if(!FTRapid.LW.contains(fileName)) {
                 newList.add(file);
             }
         }
