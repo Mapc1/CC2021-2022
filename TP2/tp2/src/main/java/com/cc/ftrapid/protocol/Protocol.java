@@ -1,4 +1,4 @@
-package com.cc.ffsync.protocol;
+package com.cc.ftrapid.protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,14 +11,12 @@ public class Protocol {
     public static Integer messageSize = 1420;
     public static Integer dataByteSize = 2;
 
-    public static final byte INFO_TYPE = 1;
-    public static final byte FILE_REQ_TYPE = 2;
-    public static final byte FILE_TYPE = 3;
-    public static final byte LS_TYPE = 4;
-    public static final byte KEY_TYPE = 5;
-    public static final byte ACK_TYPE = 6;
-    public static final byte SYN_TYPE = 7;
-    public static final byte SEQ_TYPE = 8;
+    public static final byte LS_TYPE = 1;
+    public static final byte INFO_TYPE = 2;
+    public static final byte FILE_REQ_TYPE = 3;
+    public static final byte FILE_TYPE = 4;
+    public static final byte ACK_TYPE = 5;
+    public static final byte SEQ_TYPE = 6;
 
     // Tipo 1
     // -----------------------------------
@@ -68,7 +66,7 @@ public class Protocol {
         bb = ByteBuffer.allocate(messageSize);
 
         // primeiro byte que define o tipo
-        bb.put((byte) 1);
+        bb.put(Protocol.INFO_TYPE);
 
         // bytes para o nº da sequencia
         //byte[] seqBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
@@ -116,7 +114,7 @@ public class Protocol {
         }
     }
 
-    // Tipo 2
+    // Tipo 4
     // -----------------------------
     // | Tipo | Size | Metadadados |
     // -----------------------------

@@ -1,12 +1,12 @@
-package com.cc.ffsync.auth;
+package com.cc.ftrapid.auth;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.SocketException;
 import java.util.Random;
 
-import com.cc.ffsync.logs.Log;
-import com.cc.ffsync.logs.LogType;
+import com.cc.ftrapid.logs.Log;
+import com.cc.ftrapid.logs.LogType;
 
 public class Encryption {
     private Integer privKey;

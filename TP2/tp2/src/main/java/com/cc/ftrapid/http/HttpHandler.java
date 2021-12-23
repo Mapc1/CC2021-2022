@@ -1,4 +1,4 @@
-package com.cc.ffsync.http;
+package com.cc.ftrapid.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,8 +7,8 @@ import java.net.Socket;
 import java.nio.file.InvalidPathException;
 import java.util.List;
 
-import com.cc.ffsync.FFSync;
-import com.cc.ffsync.utils.FilesHandler;
+import com.cc.ftrapid.FTRapid;
+import com.cc.ftrapid.utils.FilesHandler;
 
 public class HttpHandler implements Runnable {
     private Socket socket;
@@ -36,7 +36,7 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server" + "/ServerLog.txt");
+            log = FilesHandler.readFileText(FTRapid.LOG_FOLDER + "/Server" + "/ServerLog.txt");
 
             sb.append(log);
         } catch (IOException e) {
@@ -53,7 +53,7 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Server");
+            List<String> files = FilesHandler.readAllFilesName(FTRapid.LOG_FOLDER + "/Server");
             sb.append("<p><span style=\"font-size: 18px;\">Ficheiros com log:</span></p><p></p>");
 
             for (String file : files) {
@@ -77,7 +77,7 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            String log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server/" + file);
+            String log = FilesHandler.readFileText(FTRapid.LOG_FOLDER + "/Server/" + file);
             sb.append(log);
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro.");
@@ -96,7 +96,7 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Client");
+            List<String> files = FilesHandler.readAllFilesName(FTRapid.LOG_FOLDER + "/Client");
             sb.append("<p><span style=\"font-size: 18px;\">Ficheiros com log:</span></p><p></p>");
 
             for (String file : files) {
@@ -118,7 +118,7 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            String log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Client/" + file);
+            String log = FilesHandler.readFileText(FTRapid.LOG_FOLDER + "/Client/" + file);
             sb.append(log);
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro.");
@@ -136,8 +136,8 @@ public class HttpHandler implements Runnable {
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
-            List<String> allFiles = FilesHandler.readAllFilesName(FFSync.SYNC_FOLDER);
-            List<String> filesToSync = FFSync.LW.getAll();
+            List<String> allFiles = FilesHandler.readAllFilesName(FTRapid.SYNC_FOLDER);
+            List<String> filesToSync = FTRapid.LW.getAll();
 
             sb.append("<p><span style=\"font-size: 20px;\">Todos os ficheiros da pasta selecionada:</span></p>");
 

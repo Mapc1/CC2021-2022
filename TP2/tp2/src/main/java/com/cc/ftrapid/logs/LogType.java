@@ -1,4 +1,4 @@
-package com.cc.ffsync.logs;
+package com.cc.ftrapid.logs;
 
 public enum LogType {
     GOOD("[Good] "),

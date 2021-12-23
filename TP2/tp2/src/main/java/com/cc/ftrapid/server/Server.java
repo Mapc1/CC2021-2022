@@ -1,17 +1,17 @@
-package com.cc.ffsync.server;
+package com.cc.ftrapid.server;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
-import com.cc.ffsync.FFSync;
-import com.cc.ffsync.logs.Log;
-import com.cc.ffsync.logs.LogType;
-import com.cc.ffsync.protocol.Protocol;
+import com.cc.ftrapid.FTRapid;
+import com.cc.ftrapid.logs.Log;
+import com.cc.ftrapid.logs.LogType;
+import com.cc.ftrapid.protocol.Protocol;
 
 public class Server implements Runnable {
-    public static final int PORT = 8080;
-    public static final String LOG_FOLDER = FFSync.LOG_FOLDER + "/Server";
+    public static final int PORT = 80;
+    public static final String LOG_FOLDER = FTRapid.LOG_FOLDER + "/Server";
     private static final String LOG_FILE = "/ServerLog.txt";
     
     private DatagramSocket socket;

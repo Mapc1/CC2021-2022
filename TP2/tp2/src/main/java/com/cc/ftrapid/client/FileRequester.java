@@ -1,4 +1,4 @@
-package com.cc.ffsync.client;
+package com.cc.ftrapid.client;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,12 +12,12 @@ import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 
-import com.cc.ffsync.FFSync;
-import com.cc.ffsync.auth.Encryption;
-import com.cc.ffsync.logs.Log;
-import com.cc.ffsync.logs.LogType;
-import com.cc.ffsync.protocol.Protocol;
-import com.cc.ffsync.server.Server;
+import com.cc.ftrapid.FTRapid;
+import com.cc.ftrapid.auth.Encryption;
+import com.cc.ftrapid.logs.Log;
+import com.cc.ftrapid.logs.LogType;
+import com.cc.ftrapid.protocol.Protocol;
+import com.cc.ftrapid.server.Server;
 
 public class FileRequester implements Runnable {
     DatagramSocket socket;
@@ -92,11 +92,11 @@ public class FileRequester implements Runnable {
 
     private void getFileData(String metadata) throws IOException {
         String[] dados = metadata.split(";");
-        String filePath = FFSync.SYNC_FOLDER + "/" + dados[0];
+        String filePath = FTRapid.SYNC_FOLDER + "/" + dados[0];
         File f = new File(filePath);
         FileOutputStream fos = new FileOutputStream(f);
 
-        FFSync.LW.add(dados[0]);
+        FTRapid.LW.add(dados[0]);
 
         /* Setting all times to 0 so that in case of an error the other machine does not
          * try to fetch these broken files
@@ -178,7 +178,7 @@ public class FileRequester implements Runnable {
         attr.setTimes(modifiedTime, accessTime, createTime);
         fos.close();
 
-        FFSync.LW.remove(dados[0]);
+        FTRapid.LW.remove(dados[0]);
     }
 
     private void sendAck(byte type, long seqNum) throws IOException {

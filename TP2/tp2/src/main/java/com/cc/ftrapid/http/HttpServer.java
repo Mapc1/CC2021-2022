@@ -1,4 +1,4 @@
-package com.cc.ffsync.http;
+package com.cc.ftrapid.http;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -10,7 +10,7 @@ public class HttpServer implements Runnable {
     @Override
     public void run() {
         try {
-            final ServerSocket server = new ServerSocket(8080);
+            final ServerSocket server = new ServerSocket(80);
             while (on) {
                 Socket socket = server.accept();
                 Thread t = new Thread(new HttpHandler(socket));
