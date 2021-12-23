@@ -174,7 +174,7 @@ public class HttpHandler implements Runnable {
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientftlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FFSync</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FFSync</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FTRapid</span></p>");
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/srequestslogs</strong></em> - <span style=\"font-size: 14px;\">Log do pedidos que o servidor recebeu do FFSync</span></p>");
 
