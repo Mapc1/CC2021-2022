@@ -3,6 +3,7 @@ package com.cc.ffsync.utils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -99,7 +100,7 @@ public class FilesHandler {
 
     }
 
-    public static String readFileText(String path) throws IOException {
+    public static String readFileText(String path) throws IOException, InvalidPathException {
         Path fileName = Path.of(path);
 
         String text = Files.readString(fileName);

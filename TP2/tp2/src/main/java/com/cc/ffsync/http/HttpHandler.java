@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.nio.file.InvalidPathException;
 import java.util.List;
 
 import com.cc.ffsync.FFSync;
@@ -23,7 +24,7 @@ public class HttpHandler implements Runnable {
         sb.append("<p><span style=\"font-size: 30px;\">P&aacute;gina inexistente.</span></p>");
         sb.append("<p><br></p>");
         sb.append(
-                "<p><span style=\"font-size: 12px;\">Consulte a p&aacute;gina <em><strong>localhost:8080/</strong></em> para saber quais as p&aacute;ginas possiveis.</span></p>");
+                "<p><span style=\"font-size: 12px;\">Consulte a p&aacute;gina <em><strong>/</strong></em> para saber quais as p&aacute;ginas possiveis.</span></p>");
 
         return sb.toString();
     }
@@ -46,24 +47,43 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
-    private String serverRequestsLogMessage() {
+    private String allServerRequestsLogMessage() {
         StringBuilder sb = new StringBuilder();
 
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
             List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Server");
-            String log;
+            sb.append("<p><span style=\"font-size: 18px;\">Ficheiros com log:</span></p><p></p>");
 
             for (String file : files) {
                 if (!file.equals("ServerLog.txt")) {
-                    log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server/" + file);
-                    sb.append("Ficheiro ").append(file).append("\n");
-                    sb.append(log).append("\n\n");
+                    sb.append("<p>").append(file).append("</p>");
                 }
             }
+            sb.append(
+                    "<p><span style=\"font-size: 18px;\">Para verificar o log de um ficheiro, <em>.../srequestslogs/exfile</em></span></p>");
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro de logs.");
+            e.printStackTrace();
+        }
+
+        return sb.toString();
+    }
+
+    private String serverRequestsLogMessage(String file) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("HTTP/1.1 200 OK\r\n\r\n");
+
+        try {
+            String log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Server/" + file);
+            sb.append(log);
+        } catch (IOException e) {
+            sb.append("Erro na leitura do ficheiro.");
+            e.printStackTrace();
+        } catch (InvalidPathException e) {
+            sb.append("Ficheiro inexistente.");
             e.printStackTrace();
         }
 
@@ -88,24 +108,43 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
-    private String clientFileTransfLogMessage() {
+    private String clientAllFileTransfLogMessage() {
         StringBuilder sb = new StringBuilder();
 
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
 
         try {
             List<String> files = FilesHandler.readAllFilesName(FFSync.LOG_FOLDER + "/Client");
-            String log;
+            sb.append("<p><span style=\"font-size: 18px;\">Ficheiros com log:</span></p><p></p>");
 
             for (String file : files) {
                 if (!file.equals("ClientLog.txt")) {
-                    log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Client/" + file);
-                    sb.append("Ficheiro ").append(file).append("\n");
-                    sb.append(log).append("\n\n");
+                    sb.append("<p>").append(file).append("</p>");
                 }
             }
+            sb.append(
+                    "<p><span style=\"font-size: 18px;\">Para verificar o log de um ficheiro, <em>.../clientftlog/exfile</em></span></p>");
         } catch (IOException e) {
             sb.append("Erro na leitura do ficheiro de logs.");
+            e.printStackTrace();
+        }
+
+        return sb.toString();
+    }
+
+    private String clientFileTransfLogMessage(String file) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("HTTP/1.1 200 OK\r\n\r\n");
+
+        try {
+            String log = FilesHandler.readFileText(FFSync.LOG_FOLDER + "/Client/" + file);
+            sb.append(log);
+        } catch (IOException e) {
+            sb.append("Erro na leitura do ficheiro.");
+            e.printStackTrace();
+        } catch (InvalidPathException e) {
+            sb.append("Ficheiro inexistente.");
             e.printStackTrace();
         }
 
@@ -181,11 +220,17 @@ public class HttpHandler implements Runnable {
             } else if (type.equals("/clientlog")) {
                 httpResponse = clientLogMessage();
             } else if (type.equals("/clientftlog")) {
-                httpResponse = clientFileTransfLogMessage();
+                httpResponse = clientAllFileTransfLogMessage();
+            } else if (type.startsWith("/clientftlog")) {
+                String file = type.substring("/clientftlog".length());
+                httpResponse = clientFileTransfLogMessage(file);
             } else if (type.equals("/serverlog")) {
                 httpResponse = serverLogMessage();
             } else if (type.equals("/srequestslogs")) {
-                httpResponse = serverRequestsLogMessage();
+                httpResponse = allServerRequestsLogMessage();
+            } else if (type.startsWith("/srequestslogs")) {
+                String file = type.substring("/srequestslogs".length());
+                httpResponse = serverRequestsLogMessage(file);
             } else if (type.equals("/syncstatus")) {
                 httpResponse = syncStatusMessage();
             } else {
