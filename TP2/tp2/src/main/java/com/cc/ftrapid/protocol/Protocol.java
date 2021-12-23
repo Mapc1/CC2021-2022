@@ -86,30 +86,6 @@ public class Protocol {
         return newArray;
     }
 
-    public static void readInfoMessage(List<byte[]> messages) throws IOException {
-        Integer seqNByteSize = 2;
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        for (byte[] message : messages) {
-            System.out.println("Tipo Mensagem: " + (int) message[0]);
-            byte[] sequenceNum = { message[1],
-                    message[2] };
-            ByteBuffer sequenceBB = ByteBuffer.wrap(sequenceNum);
-            int seqN = (int) sequenceBB.getShort();
-            System.out.println("Sequencia: " + seqN);
-
-            byte[] sizeBytes = { message[1 + seqNByteSize],
-                    message[2 + seqNByteSize] };
-            ByteBuffer sizeBB = ByteBuffer.wrap(sizeBytes);
-            int sizeMetaData = (int) sizeBB.getShort();
-            System.out.println("Tamanho Metadados: " + sizeMetaData);
-
-            byte[] metaDataBytes = ByteBuffer.allocate(sizeMetaData).array();
-            System.arraycopy(message, 1 + seqNByteSize + dataByteSize, metaDataBytes, 0, sizeMetaData);
-            outputStream.write(metaDataBytes);
-        }
-    }
-
     /** Tipo 3
      *  ----------------------------------
      *  | Tipo | Size | Nome do Ficheiro |
