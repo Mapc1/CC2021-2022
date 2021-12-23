@@ -114,6 +114,23 @@ public class Protocol {
         }
     }
 
+    /** Tipo 3
+     *  ----------------------------------
+     *  | Tipo | Size | Nome do Ficheiro |
+     *  ----------------------------------
+     *     1B     2B
+    */
+    public static byte[] createGETFile(String fileName) {
+        byte[] buff = fileName.getBytes();
+        ByteBuffer bb = ByteBuffer.allocate(3 + buff.length);
+
+        bb.put(Protocol.FILE_REQ_TYPE);
+        bb.putShort((short) buff.length);
+        bb.put(buff);
+
+        return bb.array();
+    }
+
     // Tipo 4
     // -----------------------------
     // | Tipo | Size | Metadadados |

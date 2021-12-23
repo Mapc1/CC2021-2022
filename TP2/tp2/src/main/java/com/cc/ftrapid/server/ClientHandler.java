@@ -73,8 +73,8 @@ public class ClientHandler implements Runnable {
 		}
     }
 
-    private void sendFileData(String metadata) throws IOException {
-        String filePath = FTRapid.SYNC_FOLDER + "/" + metadata.split(";")[0];
+    private void sendFileData(String fileName) throws IOException {
+        String filePath = FTRapid.SYNC_FOLDER + fileName;
         byte[] listenBuff = new byte[Protocol.messageSize];
 
         File f = new File(filePath);
