@@ -152,48 +152,6 @@ public class Protocol {
         return bb.array();
     }
 
-    // Tipo 4
-    // -----------------------------
-    // | Tipo | Size | Metadadados |
-    // -----------------------------
-    // 1B 2B
-    public static byte[] createAskFileTransferMessage(String metadata) {
-        ByteBuffer bb = ByteBuffer.allocate(messageSize);
-
-        byte[] metaDataBytes = metadata.getBytes(StandardCharsets.UTF_8);
-
-        // primeiro byte que define o tipo
-        bb.put(Protocol.LS_TYPE);
-
-        // dois bytes para o tamanho dos dados
-        // byte[] metaDataSize =
-        // ByteBuffer.allocate(4).putInt(metaDataBytes.length).array();
-        bb.putShort((short) metaDataBytes.length);
-
-        // adiciona os bytes com os metadados à mensagem
-        bb.put(metaDataBytes);
-
-        return bb.array();
-    }
-
-    /**
-     * Método que devolve os metadados do ficheiro que foi pedido para transferência
-     * 
-     * @param message Mensagem onde está a informação
-     * @return Metadados do ficheiro pretendido
-     * @throws IOException Se ocorrer um erro I/O
-     */
-    public static String readAskFileTransferMessage(byte[] message) {
-        byte[] sizeBytes = { message[1], message[2] };
-        ByteBuffer sizeBB = ByteBuffer.wrap(sizeBytes);
-        int sizeMetaData = (int) sizeBB.getShort();
-
-        byte[] metaDataBytes = ByteBuffer.allocate(sizeMetaData).array();
-        System.arraycopy(message, 1 + dataByteSize, metaDataBytes, 0, sizeMetaData);
-
-        return new String(metaDataBytes);
-    }
-
     // Tipo 6
     // ---------------------------------
     // | Tipo | Tipo Mensagem | Nº Seq |
