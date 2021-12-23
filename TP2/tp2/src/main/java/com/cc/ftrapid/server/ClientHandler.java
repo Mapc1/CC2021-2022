@@ -108,7 +108,7 @@ public class ClientHandler implements Runnable {
                     ByteBuffer bb = ByteBuffer.wrap(ackPacket.getData());
 
                     byte answerType = bb.get();
-                    long ackSeq = bb.getLong(2);
+                    long ackSeq = bb.getLong();
 
                     if(answerType == Protocol.ACK_TYPE && ackSeq == i) {
                         long endRTT = System.currentTimeMillis();
@@ -169,7 +169,7 @@ public class ClientHandler implements Runnable {
                     ByteBuffer data = ByteBuffer.wrap(ackPacket.getData());
 
                     byte answerType = data.get();
-                    long ackSeq = data.getLong(2);
+                    long ackSeq = data.getLong();
 
                     if(answerType == Protocol.ACK_TYPE) {
                         logger.write("ACK received nº " + ackSeq, LogType.GOOD);
@@ -185,11 +185,8 @@ public class ClientHandler implements Runnable {
     }
 
     private void sendNSeqs(long nSeqs) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate(9);
-
-        bb.put(Protocol.SEQ_TYPE);
-        bb.putLong(nSeqs);
-        DatagramPacket packet = new DatagramPacket(bb.array(), bb.array().length, clientIP, clientPort);
+        byte[] buffer = Protocol.createNSeqPacket(nSeqs);
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, clientIP, clientPort);
 
         byte[] ackBuffer = new byte[Protocol.messageSize];
         DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
@@ -201,12 +198,12 @@ public class ClientHandler implements Runnable {
                 socket.send(packet);
                 socket.receive(ackPacket);
                 //byte[] decrypted = e.decrypt(ackPacket.getData(), ackPacket.getData().length);
-                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(2);
+                long ackSeqs = ByteBuffer.wrap(ackPacket.getData()).getLong(1);
                 if(ackBuffer[0] == Protocol.ACK_TYPE && ackSeqs == nSeqs) {
                     ack = true;
                 }            
             } catch (SocketTimeoutException e) {
-                //socket.send(packet);
+                logger.write("Timeout. Resending number of sequences...", LogType.TIMEOUT);
             }
         }
     }

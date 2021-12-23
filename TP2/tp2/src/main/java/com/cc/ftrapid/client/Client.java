@@ -234,7 +234,7 @@ public class Client implements Runnable {
 
                     short msgSeq = bb.getShort();
                     if(type == Protocol.INFO_TYPE && msgSeq == seqNum) {
-                        sendAck(Protocol.INFO_TYPE, seqNum);
+                        sendAck(seqNum);
                         short size = bb.getShort(); 
                         byte[] msg = new byte[size];
                         System.arraycopy(bb.array(), 5, msg, 0, size);
@@ -245,14 +245,14 @@ public class Client implements Runnable {
                     } else {
                         logger.write("Wrong packet received. Nº: " + msgSeq + " s " + seqNum  + ", Type: " + type, LogType.ERROR);
                         if(type == Protocol.SEQ_TYPE) {
-                            sendAck(Protocol.SEQ_TYPE, nSeqs);
+                            sendAck(nSeqs);
                         } else {
-                            sendAck(Protocol.INFO_TYPE, seqNum - 1);
+                            sendAck(seqNum - 1);
                         }
                     }
                 } catch (SocketTimeoutException e) {
                     logger.write("Timeout WTF", LogType.TIMEOUT);
-                    sendAck(Protocol.INFO_TYPE, seqNum - 1);
+                    sendAck(seqNum - 1);
                 }
             }
         }
@@ -287,7 +287,7 @@ public class Client implements Runnable {
 
                 if(buffer[0] == Protocol.SEQ_TYPE) {
                     nSeqs = ByteBuffer.wrap(buffer).getLong(1);
-                    sendAck(Protocol.SEQ_TYPE, nSeqs);
+                    sendAck(nSeqs);
                     received = true;
                     logger.write("Received number of sequences. They are " + nSeqs + " packets.", LogType.GOOD);
                 }
@@ -298,8 +298,8 @@ public class Client implements Runnable {
         return nSeqs;
     }
 
-    private void sendAck(byte type, long nSeqs) throws IOException {
-        byte[] buffer = Protocol.createAckMessage((int) type, nSeqs);
+    private void sendAck(long nSeqs) throws IOException {
+        byte[] buffer = Protocol.createAckMessage(nSeqs);
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
 
         socket.send(packet);

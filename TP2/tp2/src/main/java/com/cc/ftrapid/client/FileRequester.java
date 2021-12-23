@@ -128,7 +128,7 @@ public class FileRequester implements Runnable {
 
                     long msgSeq = bb.getLong();
                     if(type == Protocol.FILE_TYPE && msgSeq == seqNum) {
-                            sendAck(type, seqNum);
+                            sendAck(seqNum);
                             startRTT = System.currentTimeMillis();
                             short size = bb.getShort();
                             byte[] msg = new byte[size];
@@ -140,16 +140,16 @@ public class FileRequester implements Runnable {
                     } else {
                         logger.write("Wrong packet received: Nº " + msgSeq + ", Type: " + type + " Resending ACK...", LogType.ERROR);
                         if(type == Protocol.SEQ_TYPE) {
-                            sendAck(Protocol.SEQ_TYPE, nSeqs);
+                            sendAck(nSeqs);
                         } else {
-                            sendAck(Protocol.FILE_TYPE, seqNum - 1);
+                            sendAck(seqNum - 1);
                         }
                     }
                 } catch (SocketTimeoutException e) {
                     logger.write("Timeout reached. Resending ACK nº" + (seqNum - 1) + "...", LogType.TIMEOUT);
                     timeout += 50;
                     socket.setSoTimeout(timeout);
-                    sendAck(Protocol.FILE_TYPE, seqNum - 1);
+                    sendAck(seqNum - 1);
                 }
             }
         }
@@ -177,8 +177,8 @@ public class FileRequester implements Runnable {
         FTRapid.LW.remove(dados[0]);
     }
 
-    private void sendAck(byte type, long seqNum) throws IOException {
-        byte[] buffer = Protocol.createAckMessage((int) type, seqNum);
+    private void sendAck(long seqNum) throws IOException {
+        byte[] buffer = Protocol.createAckMessage(seqNum);
         //byte[] encrypted = e.encrypt(buffer, buffer.length);
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, serverIP, serverPort);
 
@@ -197,7 +197,7 @@ public class FileRequester implements Runnable {
 
                 if(buffer[0] == Protocol.SEQ_TYPE) {
                     nSeqs = ByteBuffer.wrap(buffer).getLong(1);
-                    sendAck(Protocol.SEQ_TYPE, nSeqs);
+                    sendAck(nSeqs);
                     received = true;
                     logger.write("Received number of sequences. They are " + nSeqs + " packets.", LogType.GOOD);
                 }

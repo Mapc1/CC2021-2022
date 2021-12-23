@@ -123,16 +123,15 @@ public class Protocol {
         return bb.array();
     }
 
-    // Tipo 6
-    // ---------------------------------
-    // | Tipo | Tipo Mensagem | Nº Seq |
-    // ---------------------------------
-    // 1B 1B 5B
-    public static byte[] createAckMessage(Integer messageType, Long seqNumber) {
-        ByteBuffer bb = ByteBuffer.allocate(messageSize);
+    // Tipo 5
+    // -----------------
+    // | Tipo | Nº Seq |
+    // -----------------
+    //    1B      8B
+    public static byte[] createAckMessage(Long seqNumber) {
+        ByteBuffer bb = ByteBuffer.allocate(9);
         // primeiro byte que define o tipo
         bb.put(Protocol.ACK_TYPE);
-        bb.put((byte) (int) messageType);
 
         // bytes com o nº de sequências que esta transferência terá
         bb.putLong(seqNumber);
@@ -148,6 +147,23 @@ public class Protocol {
 
         // byte que indica o tipo da mensagem a que está a responder
         bb.put((byte) (int) messageType);
+
+        return bb.array();
+    }
+
+    /**
+     * ---------------------
+     * | Tipo | Nº de Seqs |
+     * ---------------------
+     *    1B        8B
+     * @param nSeqs Número de sequências
+     * @return pacote a ser enviado
+     */
+
+    public static byte[] createNSeqPacket(long nSeqs) {
+        ByteBuffer bb = ByteBuffer.allocate(9);
+        bb.put(Protocol.SEQ_TYPE);
+        bb.putLong(nSeqs);
 
         return bb.array();
     }
