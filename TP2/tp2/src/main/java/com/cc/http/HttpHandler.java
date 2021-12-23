@@ -17,6 +17,10 @@ public class HttpHandler implements Runnable {
         this.socket = socket;
     }
 
+    /**
+     * Cria a mensagem HTTP para indicar que a página não existe.
+     * @return String com a mensagem HTTP
+     */
     private String pageNotFoundMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -29,6 +33,10 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria a mensagem HTTP com o texto do ficheiro log do servidor.
+     * @return String com a mensagem HTTP
+     */
     private String serverLogMessage() {
         StringBuilder sb = new StringBuilder();
         String log;
@@ -47,6 +55,10 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP com a informação dos requests que têm log e como observar esses logs.
+     * @return String com a mensagem HTTP
+     */
     private String allServerRequestsLogMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -71,6 +83,11 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP com a informação do ficheiro pedido.
+     * @param file Ficheiro que queremos ler
+     * @return String com a mensagem HTTP
+     */
     private String serverRequestsLogMessage(String file) {
         StringBuilder sb = new StringBuilder();
 
@@ -90,6 +107,10 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP com os ficheiros que têm log de transferência, indicando como observar esses logs.
+     * @return String com a mensagem HTTP
+     */
     private String clientAllFileTransfLogMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -112,6 +133,11 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP com a informação do ficheiro pedido.
+     * @param file Ficheiro a ler
+     * @return String com a mensagem HTTP
+     */
     private String clientFileTransfLogMessage(String file) {
         StringBuilder sb = new StringBuilder();
 
@@ -131,6 +157,10 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP que apresenta o estado de sincronização da pasta.
+     * @return String com a mensagem HTTP
+     */
     private String syncStatusMessage() {
         StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 200 OK\r\n\r\n");
@@ -159,6 +189,10 @@ public class HttpHandler implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * Cria mensagem HTTP da página inicial, indicando todas as páginas existentes.
+     * @return String com a mensagem HTTP
+     */
     private String rootMessage() {
         StringBuilder sb = new StringBuilder();
 
@@ -174,7 +208,7 @@ public class HttpHandler implements Runnable {
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/clientftlog</strong></em> - <span style=\"font-size: 14px;\">Log da transfer&ecirc;ncia dos ficheiros do cliente do FFSync</span></p>");
         sb.append(
-                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FFSync</span></p>");
+                "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/serverlog</strong></em> - <span style=\"font-size: 14px;\">Log do servidor do FTRapid</span></p>");
         sb.append(
                 "<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<em><strong>/srequestslogs</strong></em> - <span style=\"font-size: 14px;\">Log do pedidos que o servidor recebeu do FFSync</span></p>");
 
