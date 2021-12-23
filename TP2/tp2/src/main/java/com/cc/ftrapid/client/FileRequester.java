@@ -47,25 +47,21 @@ public class FileRequester implements Runnable {
 
     public void run() {
         try {
-            sendGetFile(metadata);
-            getFileData(metadata);
+            sendGetFile();
+            getFileData();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
 
-    private void sendGetFile(String metaData) throws IOException {
-        byte[] metaBuff = metaData.getBytes();
-        ByteBuffer reqBB = ByteBuffer.allocate(3 + metaBuff.length);
-
-        reqBB.put(Protocol.FILE_REQ_TYPE);
-        reqBB.putShort((short) metaBuff.length);
-        reqBB.put(metaBuff);
+    private void sendGetFile() throws IOException {
+        String fileName = metadata.split(";")[0];
+        byte[] fNameBuff = Protocol.createGETFile(fileName); 
 
         logger.write("Sending file request...", LogType.GOOD);
 
-        DatagramPacket packet = new DatagramPacket(reqBB.array(), reqBB.array().length, serverIP, serverPort);
+        DatagramPacket packet = new DatagramPacket(fNameBuff, fNameBuff.length, serverIP, serverPort);
         socket.send(packet);
 
         byte[] respBuff = new byte[Protocol.messageSize];
@@ -90,7 +86,7 @@ public class FileRequester implements Runnable {
         }
     }
 
-    private void getFileData(String metadata) throws IOException {
+    private void getFileData() throws IOException {
         String[] dados = metadata.split(";");
         String filePath = FTRapid.SYNC_FOLDER + "/" + dados[0];
         File f = new File(filePath);
