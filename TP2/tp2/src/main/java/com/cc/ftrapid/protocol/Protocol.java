@@ -131,6 +131,27 @@ public class Protocol {
         return bb.array();
     }
 
+    /**
+     * Tipo 4
+     * --------------------------------
+     * | Tipo | Nº Seq | Size | Dados |
+     * --------------------------------
+     *    1B      8B      2B
+     * 
+     * @param dados Dados do ficheiro. Max messageSize - 11 Bytes.
+     * @param seqNumber Nº de sequencia.
+     * @return Pacote a ser enviado.
+     */
+    public static byte[] createFilePacket(byte[] dados, long seqNumber) {
+        ByteBuffer bb = ByteBuffer.allocate(11 + dados.length);
+        bb.put(Protocol.FILE_TYPE);
+        bb.putLong(seqNumber);
+        bb.putShort((short) dados.length);
+        bb.put(dados);
+
+        return bb.array();
+    }
+
     // Tipo 4
     // -----------------------------
     // | Tipo | Size | Metadadados |

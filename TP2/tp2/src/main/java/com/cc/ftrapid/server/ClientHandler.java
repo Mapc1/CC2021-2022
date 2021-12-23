@@ -91,14 +91,10 @@ public class ClientHandler implements Runnable {
 
         long i = 0;
         while(i < nSeqs) {
-            byte[] pacote = fis.readNBytes(Protocol.messageSize - 11);
-            ByteBuffer pacoteBB = ByteBuffer.allocate(Protocol.messageSize);
-            pacoteBB.put(Protocol.FILE_TYPE);
-            pacoteBB.putLong(i);
-            pacoteBB.putShort((short) pacote.length);
-            pacoteBB.put(pacote);
+            byte[] dados = fis.readNBytes(Protocol.messageSize - 11);
+            byte[] pacote = Protocol.createFilePacket(dados, i);
 
-            DatagramPacket packet = new DatagramPacket(pacoteBB.array(), pacoteBB.array().length, clientIP, clientPort);
+            DatagramPacket packet = new DatagramPacket(pacote, pacote.length, clientIP, clientPort);
             DatagramPacket ackPacket = new DatagramPacket(listenBuff, listenBuff.length);
 
             logger.write("Packet nº " + i + " sent. Awaiting response...", LogType.GOOD);
